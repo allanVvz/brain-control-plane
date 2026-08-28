@@ -38,6 +38,7 @@ def test_service_identity_and_readiness_surface():
     assert "/health/ready" in paths
     assert "/messaging/campaigns" in paths
     assert "/messaging/campaigns/{campaign_id}/send" in paths
+    assert "/internal/v1/control-plane/assets/{asset_id}/attach-inbound-graph" in paths
 
 
 def test_worker_group_is_domain_scoped():
@@ -131,3 +132,20 @@ def test_control_plane_repository_has_only_the_reachable_domain_surface():
         "enqueue_whatsapp_message",
         "requeue_waiting_human_whatsapp_buffer",
     })
+
+
+def test_internal_inbound_asset_graph_command_is_authenticated(monkeypatch):
+    from routes import internal_assets
+
+    calls = []
+    monkeypatch.setattr(internal_assets.internal_auth, "authorize_webhook_token", calls.append)
+    monkeypatch.setattr(
+        internal_assets.inbound_media_graph,
+        "attach",
+        lambda asset_id: {"attached": True, "asset_id": asset_id},
+    )
+
+    result = internal_assets.attach_inbound_graph("asset-1", "internal-token")
+
+    assert calls == ["internal-token"]
+    assert result == {"attached": True, "asset_id": "asset-1"}
