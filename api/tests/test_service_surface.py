@@ -23,7 +23,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 FORBIDDEN_PREFIXES = (
     "/agents",
-    "/agent-harness",
     "/wa-validator",
     "/webhooks",
     "/messages",
@@ -39,6 +38,9 @@ def test_service_identity_and_readiness_surface():
     assert "/messaging/campaigns" in paths
     assert "/messaging/campaigns/{campaign_id}/send" in paths
     assert "/internal/v1/control-plane/assets/{asset_id}/attach-inbound-graph" in paths
+    assert "/agent-harness/sessions" in paths
+    assert "/sofia/graph-command" in paths
+    assert "/qa/reset-destructive" in paths
 
 
 def test_worker_group_is_domain_scoped():

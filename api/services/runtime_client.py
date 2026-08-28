@@ -117,3 +117,8 @@ def decorate_leads(
     if not isinstance(items, list):
         raise HTTPException(502, "Conversation runtime returned invalid lead decorations.")
     return [item for item in items if isinstance(item, dict)]
+
+
+def process_lead(payload: dict[str, Any], *, actor_user_id: str | None) -> dict:
+    """Execute a synthetic lead event through the runtime-owned decision path."""
+    return _post("/process", payload, actor_user_id=actor_user_id)
