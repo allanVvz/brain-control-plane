@@ -73,6 +73,10 @@ def test_runtime_and_transport_engines_are_absent_from_control_plane():
         "api/services/media_ingest.py",
         "api/services/wa_validator_service.py",
         "api/services/asset_graph_contract.py",
+        "api/services/graph_agent_runtime_v3.py",
+        "api/services/graph_proof_checker_v3.py",
+        "api/services/journey_outcome.py",
+        "api/services/lead_qualification.py",
         "api/services/whatsapp_providers",
         "api/services/whatsapp_outbox.py",
     )

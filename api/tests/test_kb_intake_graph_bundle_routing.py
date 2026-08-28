@@ -7,11 +7,11 @@ API_ROOT = Path(__file__).resolve().parents[1]
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
 
-from services import graph_agent_runtime_v3, kb_intake_service
+from services import kb_intake_service
 
 
 def _v3_binding() -> dict:
-    return {"active": True, "metadata": {"runtime_version": graph_agent_runtime_v3.RUNTIME_VERSION}}
+    return {"active": True, "metadata": {"runtime_version": "graph_agent_runtime_v3"}}
 
 
 def _legacy_binding() -> dict:

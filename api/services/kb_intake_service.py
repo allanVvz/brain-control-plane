@@ -20,7 +20,6 @@ from services import graph_document_publisher
 from services import knowledge_graph
 from services import knowledge_lifecycle
 from services import graph_validation
-from services import graph_agent_runtime_v3
 from services import graph_bundle
 from services import graph_bundle_adapter
 from services import graph_bundle_error_translations
@@ -951,7 +950,10 @@ def _active_workflow_binding(persona_id: str) -> dict:
 
 
 def _persona_uses_graph_bundle_pipeline(persona_id: str) -> bool:
-    return graph_agent_runtime_v3.binding_uses_v3(_active_workflow_binding(persona_id))
+    metadata = (_active_workflow_binding(persona_id).get("metadata") or {})
+    return str(
+        metadata.get("runtime_version") or metadata.get("agent_runtime") or ""
+    ) == "graph_agent_runtime_v3"
 
 
 def _current_persona_base_bundle(persona_id: str, persona_slug: str) -> dict | None:
