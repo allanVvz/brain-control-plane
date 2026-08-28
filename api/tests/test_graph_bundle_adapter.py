@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -108,7 +108,7 @@ def test_base_bundle_nodes_are_additive_not_duplicated():
 
 
 _SAMPLE_DOCUMENT = """
-### Vestido de teste â€” R$ 79,90
+### Vestido de teste — R$ 79,90
 - **Descricao:** Vestido feminino de teste.
 - **Tamanho:** Unico
 - **Preco:** R$ 79,90
@@ -250,4 +250,3 @@ def test_document_extractor_structured_path_matches_catalog_shape():
     # Title's embedded price suffix must be stripped, matching this
     # session's manual cleanup of the real Tock Fatal catalog titles.
     assert "R$" not in [c["title"] for c in candidates][0]
-

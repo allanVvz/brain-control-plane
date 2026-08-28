@@ -1,7 +1,7 @@
-﻿"""GET /logs/audit used to 404 on every call: the frontend
+"""GET /logs/audit used to 404 on every call: the frontend
 (dashboard/app/logs/page.tsx, api.auditLogs in dashboard/lib/api.ts) has
 called this exact route/param shape since it was built, but routes/logs.py
-never defined it â€” every event in system_events (conversation.fail_safe_handoff,
+never defined it — every event in system_events (conversation.fail_safe_handoff,
 whatsapp.safety_violation, ...) was invisible in the Logs > Auditoria tab.
 """
 import sys
@@ -97,4 +97,3 @@ def test_persona_scoped_request_checks_access(monkeypatch):
     except AssertionError:
         raised = True
     assert raised
-

@@ -1,4 +1,4 @@
-﻿import os
+import os
 from workers.base_worker import BaseWorker
 from services import sre_logger
 
@@ -11,4 +11,3 @@ class FlowValidatorWorker(BaseWorker):
         from agents.flow_validator.orchestrator import run
         run()
         sre_logger.info(self.name, "cycle complete")
-

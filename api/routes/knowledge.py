@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import hashlib
 import mimetypes
 import os
@@ -217,7 +217,7 @@ def intake_rag_knowledge_plan(body: RagIntakePlanBody, request: Request):
     )
     return result
 
-# â”€â”€ Vault Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Vault Sync ────────────────────────────────────────────────
 
 @router.post("/rag/backfill")
 async def backfill_rag_knowledge(body: RagBackfillBody):
@@ -298,7 +298,7 @@ def get_sync_logs(run_id: str, limit: int = 200):
     return get_import_vault_logs(run_id, limit)
 
 
-# â”€â”€ File serve (for asset preview) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── File serve (for asset preview) ───────────────────────────
 
 @router.get("/file")
 def serve_vault_file(path: str):
@@ -341,7 +341,7 @@ def serve_vault_file(path: str):
     return FileResponse(str(requested))
 
 
-# â”€â”€ Knowledge Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Knowledge Queue ───────────────────────────────────────────
 
 # Statuses that require human attention before content can be used
 ATTENTION_STATUSES = ["needs_persona", "needs_category", "pending"]
@@ -880,7 +880,7 @@ def promote_to_kb(item_id: str, request: Request):
     )
 
 
-# â”€â”€ Upload / Knowledge Intake â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Upload / Knowledge Intake ─────────────────────────────────
 
 class UploadTextBody(BaseModel):
     title: str
@@ -990,7 +990,7 @@ async def upload_file(
     return item
 
 
-# â”€â”€ KB Entries (Vault) â€” single-item CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── KB Entries (Vault) — single-item CRUD ────────────────────
 
 @router.get("/kb/{entry_id}")
 def get_kb_entry(entry_id: str, request: Request):
@@ -1044,7 +1044,7 @@ def validate_kb_entry(entry_id: str, request: Request):
     return {"ok": True, "status": "ATIVO"}
 
 
-# â”€â”€ Workflow Bindings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Workflow Bindings ─────────────────────────────────────────
 
 @router.get("/bindings")
 def list_bindings(request: Request, persona_id: str = Query(None)):
@@ -1443,7 +1443,7 @@ def sofia_suggest_product_images(slug: str, body: SofiaSuggestBody, request: Req
     return {"ok": True, "suggestions": suggestions}
 
 
-# â”€â”€ Knowledge Graph rebuild (admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Knowledge Graph rebuild (admin) ──────────────────────────
 
 @router.post("/graph/rebuild")
 def rebuild_graph(request: Request, persona_slug: Optional[str] = Query(None)):
@@ -1452,9 +1452,9 @@ def rebuild_graph(request: Request, persona_slug: Optional[str] = Query(None)):
     """Reprocessa knowledge_items + kb_entries existentes para popular
     knowledge_nodes / knowledge_edges (migration 008).
 
-    Use apÃ³s aplicar 008 ou quando o grafo divergir das tabelas-fonte.
+    Use após aplicar 008 ou quando o grafo divergir das tabelas-fonte.
 
-    Quando `persona_slug` Ã© informado, escopa pra essa persona; senÃ£o,
+    Quando `persona_slug` é informado, escopa pra essa persona; senão,
     roda globalmente (cuidado em prod com muitos clientes).
 
     Resposta:
@@ -1476,7 +1476,7 @@ def rebuild_graph(request: Request, persona_slug: Optional[str] = Query(None)):
     }
 
 
-# â”€â”€ Chat Context (semantic graph + KB fallback) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Chat Context (semantic graph + KB fallback) ──────────────
 
 @router.get("/catalog")
 def knowledge_catalog(
@@ -1540,7 +1540,7 @@ def chat_context(
 
     Resolves products/campaigns/assets/FAQs related to a lead's recent
     conversation (or to an explicit `q`). Falls back gracefully when the
-    semantic graph has no data â€” always returns the same response shape.
+    semantic graph has no data — always returns the same response shape.
     """
     if persona_id:
         auth_service.assert_persona_access(request, persona_id=persona_id)
@@ -1689,7 +1689,7 @@ def publish_context_card(
     return {**result, "card": card[0].model_dump(mode="json") if card else None}
 
 
-# â”€â”€ Published Graph JSON v2 context â”€â”€â”€
+# ── Published Graph JSON v2 context ───
 
 @router.get("/context/{persona_slug}")
 def get_kb_context(persona_slug: str, request: Request):
@@ -1713,7 +1713,7 @@ def get_kb_context(persona_slug: str, request: Request):
         }:
             continue
         lines.append(
-            f"\n### {node.node_type.upper()} Â· {node.id}\n"
+            f"\n### {node.node_type.upper()} · {node.id}\n"
             f"{str(data.get('markdown') or node.label)[:800]}"
         )
     return {
@@ -1724,7 +1724,7 @@ def get_kb_context(persona_slug: str, request: Request):
     }
 
 
-# â”€â”€ Brand Profiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Brand Profiles ────────────────────────────────────────────
 
 @router.get("/brand/{persona_id}")
 def get_brand(persona_id: str, request: Request):
@@ -1755,4 +1755,3 @@ def upsert_brand(persona_id: str, body: dict, request: Request):
         source="routes.knowledge",
     )
     return updated
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -162,4 +162,3 @@ def test_approve_publication_blocks_breaking_changes_without_ack(monkeypatch):
 
 class _FakeRequest:
     headers: dict = {}
-

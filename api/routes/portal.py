@@ -1,5 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
+import base64
 import json
 import hashlib
 import hmac
@@ -16,7 +17,6 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from services import (
-    agents_service,
     auth_service,
     campaigns_service,
     context_cards as context_cards_service,
@@ -24,19 +24,20 @@ from services import (
     journey_outcome,
     knowledge_graph,
     lead_qualification,
+    message_pagination,
+    runtime_client,
     secret_store,
     supabase_client,
-    whatsapp_outbox,
+    transport_client,
 )
-from routes import agents as agents_routes
-from routes.agents import JourneyEventBody, JourneyStateBody
+from schemas.journey import JourneyEventBody, JourneyStateBody
 from services.whatsapp_providers import get_provider
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
 PIPELINE_STAGES = [
     ("novo", "Novo"),
-    ("nao_qualificado", "NÃ£o qualificado"),
+    ("nao_qualificado", "Não qualificado"),
     ("contatado", "Contatado"),
     ("engajado", "Engajado"),
     ("qualificado", "Qualificado"),
@@ -280,8 +281,9 @@ def conversation_messages(
         raise HTTPException(404, "Conversa nao encontrada.")
     # Reuse the authenticated message cursor contract; portal authorization
     # has already proved that this lead belongs to the requested persona.
-    from routes.messages import _message_page
-    return _message_page(lead_id, limit=limit, after=after, before=before)
+    return message_pagination.message_page(
+        lead_id, limit=limit, after=after, before=before,
+    )
 
 
 @router.get("/knowledge/chat-context")
@@ -379,59 +381,19 @@ async def send_message(request: Request, persona_slug: str = Query(...)):
     except (ValueError, AttributeError) as exc:
         raise HTTPException(422, "client_message_id UUID e obrigatorio.") from exc
 
-    binding = whatsapp_outbox.resolve_lead_binding(lead)
-
-    message_id = f"manual:{client_message_id}"
-    existing = supabase_client.get_whatsapp_buffer_by_idempotency(message_id)
-    if existing:
-        if (
-            existing.get("lead_ref") != lead["id"]
-            or existing.get("channel_binding_id") != binding["id"]
-        ):
-            raise HTTPException(409, "client_message_id ja pertence a outra mensagem.")
-        return {
-            "ok": True,
-            "message_id": message_id,
-            "status": existing.get("status") or "pending_send",
-            "buffer_id": existing["id"],
-            "deduplicated": True,
-        }
-
-    media_metadata = None
-    outbox_media = None
-    if media:
-        bucket = "message-media"
-        if not supabase_client.ensure_bucket(bucket, public=False):
-            raise HTTPException(503, "Storage de mensagens indisponivel.")
-        path = f"{persona['id']}/{lead['id']}/{uuid.uuid4().hex}-{media['filename']}"
-        supabase_client.upload_to_storage(bucket, path, media["data"], media["mime"])
-        media_metadata = {
-            "bucket": bucket, "path": path, "mime": media["mime"],
-            "filename": media["filename"],
-        }
-        outbox_media = dict(media_metadata)
-
-    result = whatsapp_outbox.enqueue_outbound(
-        lead=lead,
-        text=text,
-        sender_type="human",
-        message_id=message_id,
-        correlation_id=message_id,
-        idempotency_key=message_id,
-        metadata={
-            "source": "portal",
-            "media": media_metadata,
+    user = auth_service.current_user(request)
+    return transport_client.send_portal_message(
+        {
+            "persona_id": str(persona["id"]),
+            "lead_ref": int(lead["id"]),
             "client_message_id": client_message_id,
+            "text": text,
+            "media_base64": base64.b64encode(media["data"]).decode("ascii") if media else None,
+            "media_mime": media.get("mime") if media else None,
+            "media_filename": media.get("filename") if media else None,
         },
-        media=outbox_media,
+        actor_user_id=str(user["id"]),
     )
-    return {
-        "ok": True,
-        "message_id": result.get("message_id") or message_id,
-        "status": result.get("status") or "pending_send",
-        "buffer_id": result["buffer_id"],
-        "deduplicated": bool(result.get("deduplicated")),
-    }
 
 
 @router.get("/leads")
@@ -493,19 +455,13 @@ def update_lead(lead_id: int, body: LeadPatchBody, request: Request, persona_slu
 
 def _set_ai(lead_id: int, request: Request, persona_slug: str, paused: bool):
     persona = _persona(persona_slug, request, "edit")
-    lead = _lead(lead_id, persona["id"])
-    ok = agents_service.pause_lead(lead_id) if paused else agents_service.resume_lead(lead_id)
-    if not ok:
-        raise HTTPException(500, "Falha ao atualizar IA.")
-    if not paused:
-        metadata = dict(lead.get("metadata") or {})
-        state = dict(metadata.get("vitoria_state") or {})
-        state.pop("conversation_state", None)
-        state.pop("confirmation_status", None)
-        state["clarification_attempts"] = 0
-        metadata["vitoria_state"] = state
-        supabase_client.update_lead(lead_id, {"metadata": metadata})
-    return {"ok": True, "lead_id": lead_id, "ai_paused": paused}
+    _lead(lead_id, persona["id"])
+    user = auth_service.current_user(request)
+    return runtime_client.lead_action(
+        lead_id,
+        "pause" if paused else "resume",
+        actor_user_id=str(user["id"]),
+    )
 
 
 @router.post("/leads/{lead_id}/journey-events")
@@ -524,7 +480,11 @@ def journey_event(
     persona = _persona(persona_slug, request, "edit")
     _lead(lead_id, persona["id"])
     user = auth_service.current_user(request)
-    return agents_routes.record_journey_event(lead_id, body, str(user["id"]))
+    return runtime_client.record_journey_event(
+        lead_id,
+        body.model_dump(mode="json"),
+        actor_user_id=str(user["id"]),
+    )
 
 
 @router.post("/leads/{lead_id}/journey-state")
@@ -543,8 +503,11 @@ def journey_state(
     offering = journey_outcome.business_models_for_personas(
         [persona["id"]]
     ).get(persona["id"], journey_outcome.SALES)
-    return agents_routes.set_journey_state(
-        lead_id, body, str(user["id"]), offering=offering,
+    return runtime_client.set_journey_state(
+        lead_id,
+        body.model_dump(mode="json"),
+        actor_user_id=str(user["id"]),
+        offering=offering,
     )
 
 
@@ -567,18 +530,24 @@ def acknowledge_handoff(lead_id: int, request: Request, persona_slug: str = Quer
     """
     persona = _persona(persona_slug, request, "edit")
     _lead(lead_id, persona["id"])
-    ok = agents_service.acknowledge_partial_handoff(lead_id)
-    if not ok:
-        raise HTTPException(500, "Falha ao confirmar handoff.")
-    return {"ok": True, "lead_id": lead_id, "handoff_level": "none"}
+    user = auth_service.current_user(request)
+    return runtime_client.lead_action(
+        lead_id,
+        "acknowledge-handoff",
+        actor_user_id=str(user["id"]),
+    )
 
 
 @router.post("/leads/{lead_id}/handoff")
 def handoff(lead_id: int, request: Request, persona_slug: str = Query(...)):
     persona = _persona(persona_slug, request, "edit")
     _lead(lead_id, persona["id"])
-    supabase_client.handoff_whatsapp_lead(lead_id)
-    return {"ok": True, "lead_id": lead_id, "ai_paused": True, "handoff": True}
+    user = auth_service.current_user(request)
+    return runtime_client.lead_action(
+        lead_id,
+        "handoff",
+        actor_user_id=str(user["id"]),
+    )
 
 
 def _campaign_for_persona(campaign_id: str, persona_id: str) -> dict[str, Any]:
@@ -1018,4 +987,3 @@ def events_stream(request: Request, persona_slug: str = Query(...)):
 def await_disconnected(_request: Request) -> bool:
     # Sync generator cannot await Request.is_disconnected; failed writes close it.
     return False
-

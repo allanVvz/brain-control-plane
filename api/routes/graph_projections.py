@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -83,4 +83,3 @@ def get_graph_projection(projection_id: str, request: Request):
     payload = row.get("payload") or {}
     auth_service.assert_persona_access(request, persona_slug=payload.get("persona_slug"))
     return {**payload, "event_id": row.get("id")}
-

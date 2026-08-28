@@ -1,5 +1,5 @@
-﻿"""
-Generation route â€” gera campaign.json a partir da base de conhecimento.
+"""
+Generation route — gera campaign.json a partir da base de conhecimento.
 Consumido pelo Figma plugin campaign_builder.
 """
 import json
@@ -33,16 +33,16 @@ _CAMPAIGN_SCHEMA_EXAMPLE = {
     "campaign": {
         "name": "Nome da campanha",
         "client": "slug-do-cliente",
-        "brief": "descriÃ§Ã£o do brief",
+        "brief": "descrição do brief",
         "generated_at": "ISO timestamp",
     },
     "pages": [
         {
-            "name": "Nome da pÃ¡gina (ex: Feed Posts)",
+            "name": "Nome da página (ex: Feed Posts)",
             "cards": [
                 {
                     "id": "card_01",
-                    "name": "Card 01 â€” Headline Principal",
+                    "name": "Card 01 — Headline Principal",
                     "format": "post_feed",
                     "width": 1080,
                     "height": 1080,
@@ -55,12 +55,12 @@ _CAMPAIGN_SCHEMA_EXAMPLE = {
                     ],
                     "foreground": {"overlay": "gradient_bottom", "opacity": 0.65},
                     "copy": {
-                        "headline": "TEXTO DO HEADLINE EM MAIÃšSCULAS",
+                        "headline": "TEXTO DO HEADLINE EM MAIÚSCULAS",
                         "body": "Texto complementar direto ao ponto.",
-                        "cta": "Chamada para aÃ§Ã£o!",
+                        "cta": "Chamada para ação!",
                     },
                     "assets_layer": [
-                        {"id": "logo", "label": "Logo do cliente", "position": "top_left", "nota": "versÃ£o branca"},
+                        {"id": "logo", "label": "Logo do cliente", "position": "top_left", "nota": "versão branca"},
                     ],
                 }
             ],
@@ -99,8 +99,8 @@ def _build_prompt(persona_name: str, kb_ctx: str, brief: str, formats: list[str]
     formats_desc = "\n".join(f"- {k}: {v['label']} ({v['width']}x{v['height']}px)" for k, v in _FORMATS.items() if k in formats)
     intentions_str = ", ".join(_INTENTIONS)
 
-    return f"""VocÃª Ã© um especialista em design de campanhas digitais para redes sociais.
-Seu trabalho Ã© gerar um arquivo campaign.json vÃ¡lido para o plugin Figma Campaign Builder.
+    return f"""Você é um especialista em design de campanhas digitais para redes sociais.
+Seu trabalho é gerar um arquivo campaign.json válido para o plugin Figma Campaign Builder.
 
 === CLIENTE ===
 {persona_name}
@@ -114,19 +114,19 @@ Seu trabalho Ã© gerar um arquivo campaign.json vÃ¡lido para o plugin Figma C
 === FORMATOS SOLICITADOS ===
 {formats_desc}
 
-=== INSTRUÃ‡Ã•ES ===
-Gere exatamente {n_cards} card(s) distribuÃ­dos nos formatos solicitados.
+=== INSTRUÇÕES ===
+Gere exatamente {n_cards} card(s) distribuídos nos formatos solicitados.
 Cada card deve ter copy 100% alinhado com o tom de voz e identidade do cliente.
-Use as informaÃ§Ãµes da base de conhecimento para personalizar headline, body e cta.
-Seja criativo mas fiel ao brand â€” copy em portuguÃªs brasileiro, tom correto para o cliente.
+Use as informações da base de conhecimento para personalizar headline, body e cta.
+Seja criativo mas fiel ao brand — copy em português brasileiro, tom correto para o cliente.
 
-IntenÃ§Ãµes disponÃ­veis: {intentions_str}
+Intenções disponíveis: {intentions_str}
 
 Para cada card:
-- headline: mÃ¡ximo 5 palavras, impacto mÃ¡ximo, MAIÃšSCULAS se o brand usar
-- body: 1-2 frases, benefÃ­cio claro
-- cta: 2-4 palavras, aÃ§Ã£o direta
-- bg_options: sempre inclua ao menos 1 opÃ§Ã£o solid e 1 opÃ§Ã£o image
+- headline: máximo 5 palavras, impacto máximo, MAIÚSCULAS se o brand usar
+- body: 1-2 frases, benefício claro
+- cta: 2-4 palavras, ação direta
+- bg_options: sempre inclua ao menos 1 opção solid e 1 opção image
 - foreground.overlay: "gradient_bottom", "dark_top" ou "none"
 - color_scheme: "dark" ou "light" de acordo com o fundo
 - assets_layer: inclua logo na position "top_left" sempre
@@ -134,8 +134,8 @@ Para cada card:
 === SCHEMA ESPERADO (SIGA EXATAMENTE) ===
 {schema_str}
 
-RESPONDA APENAS com o JSON vÃ¡lido, sem markdown, sem explicaÃ§Ãµes, sem cÃ³digo fences.
-O JSON deve comeÃ§ar com {{ e terminar com }}.
+RESPONDA APENAS com o JSON válido, sem markdown, sem explicações, sem código fences.
+O JSON deve começar com {{ e terminar com }}.
 """
 
 
@@ -158,7 +158,7 @@ def generate_publication(body: GenerateRequest):
     # Validate formats
     invalid = [f for f in body.formats if f not in _FORMATS]
     if invalid:
-        raise HTTPException(400, f"Formatos invÃ¡lidos: {invalid}. DisponÃ­veis: {list(_FORMATS.keys())}")
+        raise HTTPException(400, f"Formatos inválidos: {invalid}. Disponíveis: {list(_FORMATS.keys())}")
 
     if body.n_cards < 1 or body.n_cards > 12:
         raise HTTPException(400, "n_cards deve ser entre 1 e 12")
@@ -166,7 +166,7 @@ def generate_publication(body: GenerateRequest):
     # Load persona
     persona = supabase_client.get_persona(body.persona_slug)
     if not persona:
-        raise HTTPException(404, f"Persona nÃ£o encontrada: {body.persona_slug}")
+        raise HTTPException(404, f"Persona não encontrada: {body.persona_slug}")
 
     persona_id = persona["id"]
     persona_name = persona.get("name", body.persona_slug)
@@ -229,4 +229,3 @@ def generate_publication(body: GenerateRequest):
     })
 
     return campaign_json
-

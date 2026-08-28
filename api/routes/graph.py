@@ -1,5 +1,5 @@
-﻿# -*- coding: utf-8 -*-
-"""Graph data endpoint â€” returns ReactFlow-compatible nodes and edges.
+# -*- coding: utf-8 -*-
+"""Graph data endpoint — returns ReactFlow-compatible nodes and edges.
 
 The payload is decorated with semantic level/importance/tier/weight pulled
 from knowledge_node_type_registry + knowledge_relation_type_registry
@@ -772,7 +772,7 @@ def _published_persona_node(persona_slug: str):
     """Load the persona node from the *published* graph (graph_json_v2_store).
 
     This is a different store from the live knowledge_nodes authoring table
-    the rest of this file edits â€” appointment_policy only exists here, and
+    the rest of this file edits — appointment_policy only exists here, and
     it's what conversation_runtime._appointment_policy() actually reads at
     runtime, so reads/writes of it must go through this store too.
     """
@@ -801,7 +801,7 @@ def update_persona_appointment_policy(persona_slug: str, body: AppointmentPolicy
     """Edit a persona's handoff-message templates (`data.appointment_policy.texts`).
 
     These are the fallback texts DeterministicAppointment sends when it
-    hands a conversation off to a human (e.g. "vou chamar a equipe") â€” see
+    hands a conversation off to a human (e.g. "vou chamar a equipe") — see
     docs/sdr/aurora/rules/no-auto-confirm.md. They live on the persona node
     of the *published* graph, so this goes through the same
     apply_operations + commit path agent_harness_tools.publish_patch uses
@@ -857,7 +857,7 @@ def update_persona_appointment_policy(persona_slug: str, body: AppointmentPolicy
     }
 
 
-# knowledge_items statuses â†’ nodeClass
+# knowledge_items statuses → nodeClass
 _KI_STATUS: dict[str, str] = {
     "approved":       "validated",
     "embedded":       "validated",
@@ -867,7 +867,7 @@ _KI_STATUS: dict[str, str] = {
     "rejected":       "rejected",
 }
 
-# kb_entries statuses â†’ nodeClass
+# kb_entries statuses → nodeClass
 _KB_STATUS: dict[str, str] = {
     "ATIVO":   "validated",
     "INATIVO": "rejected",
@@ -991,7 +991,7 @@ def _metadata_markdown(metadata: Optional[dict], fallback: str = "") -> str:
     meta = metadata or {}
     return str(meta.get("markdown") or meta.get("body") or meta.get("content") or fallback or "")
 
-# Edge tier overrides â€” relations whose tier is fixed regardless of weight.
+# Edge tier overrides — relations whose tier is fixed regardless of weight.
 _STRUCTURAL_RELATIONS: set[str] = {
     "belongs_to_persona",
     "contains",
@@ -1017,7 +1017,7 @@ _CURATION_RELATIONS: set[str] = {"duplicate_of"}
 
 
 def _classify_relation_tier(relation_type: str, weight: float) -> str:
-    """Map relation_type + default_weight â†’ tier {strong|structural|auxiliary|curation}."""
+    """Map relation_type + default_weight → tier {strong|structural|auxiliary|curation}."""
     rt = (relation_type or "").lower()
     if rt in _CURATION_RELATIONS:
         return "curation"
@@ -1049,7 +1049,7 @@ def _resolve_focus(focus: str, persona_id: Optional[str]) -> Optional[dict]:
     """Resolve a `focus` query param into the matching knowledge_node row.
 
     Accepts either:
-      - "<node_type>:<slug>" (preferred â€” matches what _link_target generates)
+      - "<node_type>:<slug>" (preferred — matches what _link_target generates)
       - a bare UUID (knowledge_nodes.id)
     """
     if not focus:
@@ -1119,14 +1119,14 @@ def _build_focus_path(
     nodes_by_id: dict[str, dict],
     predecessor: dict[str, tuple[str, str, str]],
 ) -> list[dict]:
-    """Build a breadcrumb persona â†’ ... â†’ focus.
+    """Build a breadcrumb persona → ... → focus.
 
     The BFS is rooted at focus, so `predecessor[X] = (Y, rel, dir)` tells us
     that during the search we discovered X from Y. Walking predecessors from
     persona therefore gives [persona, ..., focus]. The relation/direction
     on each step describes the edge from the *next* node to the previous in
     the BFS direction; we re-orient it so the breadcrumb reads forward
-    persona â†’ focus.
+    persona → focus.
     """
     if not persona_node_id or persona_node_id == focus_node_id:
         # Trivial path: only the focus node itself.
@@ -1140,7 +1140,7 @@ def _build_focus_path(
             "direction": None,
         }]
     if persona_node_id not in predecessor:
-        # Persona wasn't reached by BFS â€” return just the focus node.
+        # Persona wasn't reached by BFS — return just the focus node.
         node = nodes_by_id.get(focus_node_id, {})
         return [{
             "node_id": focus_node_id,
@@ -1151,7 +1151,7 @@ def _build_focus_path(
             "direction": None,
         }]
 
-    # Walk persona â†’ ... â†’ focus via the BFS predecessor chain.
+    # Walk persona → ... → focus via the BFS predecessor chain.
     raw: list[tuple[str, Optional[str], Optional[str]]] = []
     cur: Optional[str] = persona_node_id
     guard = 0
@@ -1295,13 +1295,13 @@ def get_graph_data(
         except Exception:
             logger.exception("Could not ensure protected graph nodes", extra={"persona_id": p.get("id")})
 
-    # â”€â”€ Registries (cached) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Registries (cached) ─────────────────────────────────────────────
     node_type_registry = supabase_client.get_node_type_registry()
     relation_type_registry = supabase_client.get_relation_type_registry()
     nt_by_type = {r["node_type"]: r for r in node_type_registry}
     rt_by_type = {r["relation_type"]: r for r in relation_type_registry}
 
-    # â”€â”€ Source: semantic graph (knowledge_nodes/edges) is the truth â”€â”€â”€â”€â”€
+    # ── Source: semantic graph (knowledge_nodes/edges) is the truth ─────
     try:
         sem_nodes, sem_edges = supabase_client.list_all_knowledge_graph(
             persona_id=single_persona_id, limit_nodes=1500,
@@ -1365,7 +1365,7 @@ def get_graph_data(
         sem_edges = visible_tree_edges
     graph_depths, parent_by_child = _compute_primary_depths(sem_nodes, sem_edges)
 
-    # â”€â”€ Optional: focus subgraph (BFS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Optional: focus subgraph (BFS) ──────────────────────────────────
     focus_node = _resolve_focus(focus, single_persona_id) if focus else None
     focus_path: list[dict] = []
     if focus_node:
@@ -1489,11 +1489,11 @@ def get_graph_data(
         step = 99 / max(1, max_current_depth)
         return max(1, int(round(100 - depth * step)))
 
-    # â”€â”€ Build response payload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Build response payload ──────────────────────────────────────────
     nodes: list[dict] = []
     edges: list[dict] = []
 
-    # Persona root nodes â€” only when not focus-scoped, or when focus reached
+    # Persona root nodes — only when not focus-scoped, or when focus reached
     # the persona. (If focus excluded the persona, we still want to show it.)
     persona_node_ids_emitted: set[str] = set()
     sem_persona_ids = {n.get("persona_id") for n in sem_nodes if n.get("node_type") == "persona"}
@@ -1538,7 +1538,7 @@ def get_graph_data(
         if n.get("source_table") == "knowledge_items" and n.get("source_id")
     }
 
-    # â”€â”€ Optional technical sources (ki:/kb:) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Optional technical sources (ki:/kb:) ────────────────────────────
     ki_items: list[dict] = []
     kb_entries: list[dict] = []
     try:
@@ -1692,7 +1692,7 @@ def get_graph_data(
                     "data": {"relation_type": "belongs_to_persona", "tier": "structural", "weight": 1.0, "directional": True},
                 })
 
-    # â”€â”€ Semantic graph (the actual knowledge nodes/edges) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Semantic graph (the actual knowledge nodes/edges) ───────────────
     semantic_nodes_count = 0
     semantic_edges_count = 0
     sem_node_ids = {n["id"]: n for n in sem_nodes}
@@ -1738,7 +1738,7 @@ def get_graph_data(
         confidence = n.get("confidence")
         is_auxiliary = ntype in _AUXILIARY_NODE_TYPES or (level or 0) >= 90
 
-        # Map semantic node_type â†’ ReactFlow nodeClass for legacy color/shape.
+        # Map semantic node_type → ReactFlow nodeClass for legacy color/shape.
         semantic_state = knowledge_graph._validation_state(n)
         source_status = str(meta.get("source_status") or n.get("status") or "").lower()
         asset_validation_status = str(meta.get("validation_status") or meta.get("approval_status") or "").lower()
@@ -1794,7 +1794,7 @@ def get_graph_data(
                 "source_id": n.get("source_id"),
                 "persona_id": n.get("persona_id"),
                 "tags": tags,
-                # Semantic decoration â”€â”€â”€â”€â”€â”€â”€â”€
+                # Semantic decoration ────────
                 "node_type": ntype,
                 "slug": n.get("slug"),
                 "level": level,
@@ -2039,14 +2039,14 @@ def get_graph_data(
                 },
             })
 
-    # â”€â”€ Orphan root for ki:/kb: items without persona â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Orphan root for ki:/kb: items without persona ────────────────
     has_orphans = any(e.get("source") == "orphan" for e in edges)
     if has_orphans:
         nodes.insert(0, {
             "id": "orphan", "type": "personaNode", "position": {"x": 0, "y": 0},
             "data": {
                 "label": "Sem Persona", "slug": "_orphan",
-                "description": "Itens ainda nÃ£o atribuÃ­dos",
+                "description": "Itens ainda não atribuídos",
                 "nodeClass": "orphan",
                 "node_type": "persona", "level": 0, "importance": 0.5,
                 "color": "#475569", "icon": "user", "is_auxiliary": False,
@@ -2168,4 +2168,3 @@ def graph_contract_preflight_vzlupas(body: GraphPreflightBody):
         "errors": errors,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
-

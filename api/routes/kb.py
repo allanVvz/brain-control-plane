@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request
 from services import auth_service, supabase_client
 from services.knowledge_service import sync_from_sheets
 import asyncio
@@ -21,4 +21,3 @@ async def sync_kb(persona_id: str, request: Request, spreadsheet_id: str = Query
     auth_service.assert_persona_access(request, persona_id=persona_id)
     count = await asyncio.to_thread(sync_from_sheets, persona_id, spreadsheet_id)
     return {"synced": count}
-

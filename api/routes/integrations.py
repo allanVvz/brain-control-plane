@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Optional
 
@@ -45,7 +45,7 @@ class IntegrationValidateBody(BaseModel):
 class WhatsAppBindingBody(BaseModel):
     phone_number_id: str
     whatsapp_number: str | None = None
-    workflow_name: str = "WA â€” Outbound Sender"
+    workflow_name: str = "WA — Outbound Sender"
     n8n_workflow_id: str | None = None
     business_id: str | None = None
     waba_id: str | None = None
@@ -396,4 +396,3 @@ def test_whatsapp_webhook(slug: str, request: Request):
         raise HTTPException(400, "Binding WhatsApp nao configurado")
     supabase_client.insert_event({"event_type": "whatsapp.webhook_test_requested", "entity_type": "workflow_binding", "entity_id": binding.get("id") or "unknown", "persona_id": persona["id"], "payload": {"phone_number_id": binding.get("whatsapp_phone_number_id")}}, source="integrations.whatsapp")
     return {"ok": True, "synthetic": True, "correlation_id": f"wa-test:{binding.get('id')}"}
-

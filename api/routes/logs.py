@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from services import auth_service, supabase_client
 
 router = APIRouter(prefix="/logs", tags=["logs"])
@@ -16,11 +16,11 @@ def audit_logs(
     level: str = Query(None, description="info | warning | error"),
     limit: int = Query(200, le=500),
 ):
-    """Audit trail over system_events â€” the dashboard's Logs > Auditoria tab.
+    """Audit trail over system_events — the dashboard's Logs > Auditoria tab.
 
     Previously the frontend called this exact route/param shape against a
     backend that never defined it (always 404'd, silently swallowed as a red
-    error banner) â€” no view of system_events existed anywhere in the UI, so
+    error banner) — no view of system_events existed anywhere in the UI, so
     events like conversation.fail_safe_handoff or whatsapp.safety_violation
     were invisible to operators even though they were being written.
     """
@@ -90,7 +90,7 @@ def error_logs(
     """
     Returns structured error and warning logs written by the SRE logger.
     These are agent_logs rows where action starts with [ERROR] or [WARN].
-    Visible at GET /logs/agents as well â€” this endpoint adds component filtering.
+    Visible at GET /logs/agents as well — this endpoint adds component filtering.
     """
     if persona_id:
         auth_service.assert_persona_access(request, persona_id=persona_id)
@@ -108,4 +108,3 @@ def health_history(request: Request, limit: int = Query(30, le=100)):
     if not auth_service.is_admin(auth_service.current_user(request)):
         raise HTTPException(403, "Apenas admin pode ver historico global de saude.")
     return supabase_client.get_health_history(limit=limit)
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Literal
 
@@ -38,4 +38,3 @@ def graph_bundle_view_get(
         return graph_bundle_view.get_view(persona_slug, source=source, ref=ref)
     except graph_bundle_view.GraphBundleViewNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-

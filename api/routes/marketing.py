@@ -1,6 +1,6 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Marketing â€” text generation for marketing copy, ads, emails, social, etc.
+Marketing — text generation for marketing copy, ads, emails, social, etc.
 
 Distinct from /generate (which is for Figma campaign cards):
 - This route is text-only and persona-aware.
@@ -28,12 +28,12 @@ logger = logging.getLogger("marketing")
 router = APIRouter(prefix="/marketing", tags=["marketing"])
 
 
-# â”€â”€ Mode catalog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Mode catalog ──────────────────────────────────────────────────────────
 # Each mode maps to a system-prompt template. The template is distilled from
 # the corresponding marketing skill (see ~/.claude/skills-staging) and adapted
 # for the Brain AI context (persona-aware, structured output).
 #
-# Adding a new mode is a single dict entry â€” no other code changes required.
+# Adding a new mode is a single dict entry — no other code changes required.
 
 class ModeSpec(BaseModel):
     key: str
@@ -48,7 +48,7 @@ def _persona_block(persona_id: Optional[str]) -> str:
     """Build a persona context block to prepend to the system prompt.
 
     Pulls brand/tone/product/briefing nodes from the knowledge graph so the
-    output matches the persona's voice and catalog. Best-effort â€” empty
+    output matches the persona's voice and catalog. Best-effort — empty
     block when graph is unavailable or persona is None.
     """
     if not persona_id:
@@ -71,7 +71,7 @@ def _persona_block(persona_id: Optional[str]) -> str:
 
     parts: list[str] = []
     if canonical:
-        parts.append("## Contexto da marca / tom / regras (nÃ£o inventar â€” sÃ³ usar):")
+        parts.append("## Contexto da marca / tom / regras (não inventar — só usar):")
         for n in canonical:
             title = (n.get("title") or n.get("slug") or "").strip()
             summary = (n.get("summary") or "").strip()[:300]
@@ -90,8 +90,8 @@ def _persona_block(persona_id: Optional[str]) -> str:
             if meta.get("colors_count") is not None:
                 facts.append(f"{meta['colors_count']} cores")
             url = meta.get("catalog_url") or meta.get("url")
-            extra = f" â€” {', '.join(facts)}" if facts else ""
-            extra += f" â€” {url}" if url else ""
+            extra = f" — {', '.join(facts)}" if facts else ""
+            extra += f" — {url}" if url else ""
             parts.append(f"- {title}{extra}")
     return "\n".join(parts) + "\n"
 
@@ -99,8 +99,8 @@ def _persona_block(persona_id: Optional[str]) -> str:
 # Skill-distilled system prompts. Each is concise (~150 words) and assumes
 # the persona block is appended above it at call-time.
 _BASE_VOICE = (
-    "VocÃª Ã© um copywriter senior que escreve em portuguÃªs brasileiro coloquial "
-    "e direto. Nunca invente fatos sobre produto, preÃ§o ou polÃ­tica â€” use sÃ³ o "
+    "Você é um copywriter senior que escreve em português brasileiro coloquial "
+    "e direto. Nunca invente fatos sobre produto, preço ou política — use só o "
     "que estiver no contexto da persona. Quando faltar dado, pergunte ao "
     "operador em vez de chutar."
 )
@@ -109,25 +109,25 @@ _MODES: dict[str, ModeSpec] = {
     "copywriting": ModeSpec(
         key="copywriting",
         label="Copy de Produto",
-        description="Texto de venda/oferta para um produto especÃ­fico, baseado em Ã¢ngulos psicolÃ³gicos e preÃ§o estruturado.",
+        description="Texto de venda/oferta para um produto específico, baseado em ângulos psicológicos e preço estruturado.",
         inputs=[
-            {"name": "product",   "label": "Produto",   "type": "text",     "placeholder": "Ex.: HigienizaÃ§Ã£o de Cadeiras Prime",  "required": True},
-            {"name": "audience",  "label": "PÃºblico",   "type": "text",     "placeholder": "Ex.: donas de casa em Novo Hamburgo"},
-            {"name": "angle",     "label": "Ã‚ngulo",    "type": "select",   "options": ["benefÃ­cio", "dor", "prova social", "urgÃªncia", "preÃ§o/valor"]},
-            {"name": "format",    "label": "Formato",   "type": "select",   "options": ["headline + parÃ¡grafo", "post Instagram", "anÃºncio Meta Ads", "WhatsApp"]},
+            {"name": "product",   "label": "Produto",   "type": "text",     "placeholder": "Ex.: Higienização de Cadeiras Prime",  "required": True},
+            {"name": "audience",  "label": "Público",   "type": "text",     "placeholder": "Ex.: donas de casa em Novo Hamburgo"},
+            {"name": "angle",     "label": "Ângulo",    "type": "select",   "options": ["benefício", "dor", "prova social", "urgência", "preço/valor"]},
+            {"name": "format",    "label": "Formato",   "type": "select",   "options": ["headline + parágrafo", "post Instagram", "anúncio Meta Ads", "WhatsApp"]},
             {"name": "extra",     "label": "Notas",     "type": "textarea", "placeholder": "Ex.: enfatizar regional, tom seguro"},
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Sua tarefa Ã© escrever copy de venda baseado em Ã¢ngulo psicolÃ³gico claro. "
-            "Estruture: (1) headline curta com tensÃ£o; (2) corpo com 1 benefÃ­cio + 1 prova "
-            "concreta; (3) CTA especÃ­fico (nÃ£o 'saiba mais'). Use o preÃ§o estruturado quando "
-            "houver. SaÃ­da em markdown."
+            "Sua tarefa é escrever copy de venda baseado em ângulo psicológico claro. "
+            "Estruture: (1) headline curta com tensão; (2) corpo com 1 benefício + 1 prova "
+            "concreta; (3) CTA específico (não 'saiba mais'). Use o preço estruturado quando "
+            "houver. Saída em markdown."
         ),
         user_prompt_template=(
             "Produto: {product}\n"
-            "PÃºblico: {audience}\n"
-            "Ã‚ngulo: {angle}\n"
+            "Público: {audience}\n"
+            "Ângulo: {angle}\n"
             "Formato: {format}\n"
             "Notas adicionais: {extra}\n\n"
             "Gere a copy."
@@ -137,19 +137,19 @@ _MODES: dict[str, ModeSpec] = {
     "cold_email": ModeSpec(
         key="cold_email",
         label="E-mail Frio (cold email)",
-        description="SequÃªncia inicial de outreach personalizada. Curto, com gancho relevante e CTA Ãºnico.",
+        description="Sequência inicial de outreach personalizada. Curto, com gancho relevante e CTA único.",
         inputs=[
             {"name": "target",     "label": "Lead/empresa", "type": "text",     "placeholder": "Cargo ou nome do contato + empresa", "required": True},
-            {"name": "hook",       "label": "Gancho",        "type": "textarea", "placeholder": "Algo especÃ­fico observado (post, vaga, evento)"},
+            {"name": "hook",       "label": "Gancho",        "type": "textarea", "placeholder": "Algo específico observado (post, vaga, evento)"},
             {"name": "offer",      "label": "Oferta",        "type": "text",     "placeholder": "Ex.: Demo de 15min mostrando X"},
             {"name": "tone",       "label": "Tom",           "type": "select",   "options": ["formal", "informal", "consultivo"]},
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Escreva e-mail frio que segue: (1) linha de assunto com curiosidade ou benefÃ­cio "
-            "especÃ­fico (â‰¤8 palavras); (2) primeira frase referenciando o gancho; (3) 2-3 frases "
-            "conectando o gancho Ã  oferta; (4) CTA Ãºnico e fÃ¡cil (nunca mÃºltiplas perguntas); "
-            "(5) PS opcional com prova social. Total â‰¤ 120 palavras. SaÃ­da como bloco "
+            "Escreva e-mail frio que segue: (1) linha de assunto com curiosidade ou benefício "
+            "específico (≤8 palavras); (2) primeira frase referenciando o gancho; (3) 2-3 frases "
+            "conectando o gancho à oferta; (4) CTA único e fácil (nunca múltiplas perguntas); "
+            "(5) PS opcional com prova social. Total ≤ 120 palavras. Saída como bloco "
             "markdown com Subject: e Body:."
         ),
         user_prompt_template=(
@@ -163,34 +163,34 @@ _MODES: dict[str, ModeSpec] = {
 
     "email_sequence": ModeSpec(
         key="email_sequence",
-        label="SequÃªncia de E-mail",
-        description="SÃ©rie de 3-5 e-mails para nurture/onboarding/recovery, com progressÃ£o lÃ³gica.",
+        label="Sequência de E-mail",
+        description="Série de 3-5 e-mails para nurture/onboarding/recovery, com progressão lógica.",
         inputs=[
             {"name": "goal",     "label": "Objetivo",  "type": "select",   "options": ["nurture", "onboarding", "carrinho abandonado", "winback", "lead magnet follow-up"], "required": True},
-            {"name": "audience", "label": "PÃºblico",   "type": "text",     "placeholder": "Ex.: leads que baixaram o lead magnet"},
+            {"name": "audience", "label": "Público",   "type": "text",     "placeholder": "Ex.: leads que baixaram o lead magnet"},
             {"name": "count",    "label": "Quantos e-mails", "type": "select", "options": ["3", "5", "7"]},
             {"name": "extra",    "label": "Notas",     "type": "textarea"},
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Construa uma sequÃªncia numerada onde cada e-mail tem um Ãºnico objetivo "
-            "psicolÃ³gico (educar â†’ engajar â†’ desejo â†’ urgÃªncia â†’ CTA). Para cada e-mail: "
-            "subject, preview text, body curto (â‰¤80 palavras), CTA. Mostre o intervalo "
+            "Construa uma sequência numerada onde cada e-mail tem um único objetivo "
+            "psicológico (educar → engajar → desejo → urgência → CTA). Para cada e-mail: "
+            "subject, preview text, body curto (≤80 palavras), CTA. Mostre o intervalo "
             "sugerido entre cada (ex.: D+0, D+2, D+4). Markdown."
         ),
         user_prompt_template=(
             "Objetivo: {goal}\n"
-            "PÃºblico: {audience}\n"
+            "Público: {audience}\n"
             "Quantidade: {count} e-mails\n"
             "Notas: {extra}\n\n"
-            "Construa a sequÃªncia."
+            "Construa a sequência."
         ),
     ),
 
     "ad_creative": ModeSpec(
         key="ad_creative",
-        label="AnÃºncio (Meta/Google Ads)",
-        description="Variantes de criativo para teste A/B com mÃºltiplos Ã¢ngulos e formatos.",
+        label="Anúncio (Meta/Google Ads)",
+        description="Variantes de criativo para teste A/B com múltiplos ângulos e formatos.",
         inputs=[
             {"name": "product",  "label": "Produto",   "type": "text", "required": True},
             {"name": "platform", "label": "Plataforma","type": "select", "options": ["Meta Feed", "Meta Stories", "Google Search", "Google Display", "TikTok"]},
@@ -199,10 +199,10 @@ _MODES: dict[str, ModeSpec] = {
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Gere variantes de criativo, cada uma com Ã¢ngulo distinto (benefÃ­cio, dor, "
-            "comparaÃ§Ã£o, prova social, urgÃªncia). Para cada variante: headline, descriÃ§Ã£o "
-            "(respeitando limite da plataforma), CTA. Anote qual Ã¢ngulo psicolÃ³gico cada "
-            "variante explora. SaÃ­da como tabela markdown."
+            "Gere variantes de criativo, cada uma com ângulo distinto (benefício, dor, "
+            "comparação, prova social, urgência). Para cada variante: headline, descrição "
+            "(respeitando limite da plataforma), CTA. Anote qual ângulo psicológico cada "
+            "variante explora. Saída como tabela markdown."
         ),
         user_prompt_template=(
             "Produto: {product}\n"
@@ -216,20 +216,20 @@ _MODES: dict[str, ModeSpec] = {
     "lead_magnet": ModeSpec(
         key="lead_magnet",
         label="Lead Magnet",
-        description="IdÃ©ia + outline para um lead magnet (e-book, checklist, calculadora) que captura e qualifica.",
+        description="Idéia + outline para um lead magnet (e-book, checklist, calculadora) que captura e qualifica.",
         inputs=[
-            {"name": "audience", "label": "PÃºblico-alvo", "type": "text", "required": True},
+            {"name": "audience", "label": "Público-alvo", "type": "text", "required": True},
             {"name": "pain",     "label": "Dor principal", "type": "textarea", "required": True},
             {"name": "format",   "label": "Formato",      "type": "select", "options": ["checklist", "e-book", "template", "calculadora", "mini-curso"]},
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Proponha um lead magnet que: (1) tenha tÃ­tulo com ganho especÃ­fico no nome; "
-            "(2) outline em 5-8 seÃ§Ãµes; (3) exemplo de hook na intro; (4) call to action de "
+            "Proponha um lead magnet que: (1) tenha título com ganho específico no nome; "
+            "(2) outline em 5-8 seções; (3) exemplo de hook na intro; (4) call to action de "
             "upgrade no final que conecta ao produto. Markdown."
         ),
         user_prompt_template=(
-            "PÃºblico: {audience}\n"
+            "Público: {audience}\n"
             "Dor: {pain}\n"
             "Formato: {format}\n\n"
             "Proponha o lead magnet completo."
@@ -249,8 +249,8 @@ _MODES: dict[str, ModeSpec] = {
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
             "Gere posts numerados, cada um com objetivo claro (ensinar, vender, engajar, "
-            "provar). Use frases curtas, evite jargÃ£o, respeite o tom da marca. Para cada post: "
-            "tipo (educacional/promo/prova social), texto completo, hashtags se aplicÃ¡vel, CTA. "
+            "provar). Use frases curtas, evite jargão, respeite o tom da marca. Para cada post: "
+            "tipo (educacional/promo/prova social), texto completo, hashtags se aplicável, CTA. "
             "Markdown."
         ),
         user_prompt_template=(
@@ -264,22 +264,22 @@ _MODES: dict[str, ModeSpec] = {
 
     "content_strategy": ModeSpec(
         key="content_strategy",
-        label="EstratÃ©gia de ConteÃºdo",
-        description="Plano editorial ou pilar de conteÃºdo orientado a um objetivo de marketing.",
+        label="Estratégia de Conteúdo",
+        description="Plano editorial ou pilar de conteúdo orientado a um objetivo de marketing.",
         inputs=[
-            {"name": "goal",     "label": "Objetivo",   "type": "select", "options": ["aumentar trÃ¡fego", "gerar leads", "nutrir base", "posicionar autoridade", "lanÃ§ar produto"], "required": True},
-            {"name": "audience", "label": "PÃºblico",    "type": "text"},
-            {"name": "horizon",  "label": "Horizonte",  "type": "select", "options": ["1 mÃªs", "1 trimestre", "6 meses"]},
+            {"name": "goal",     "label": "Objetivo",   "type": "select", "options": ["aumentar tráfego", "gerar leads", "nutrir base", "posicionar autoridade", "lançar produto"], "required": True},
+            {"name": "audience", "label": "Público",    "type": "text"},
+            {"name": "horizon",  "label": "Horizonte",  "type": "select", "options": ["1 mês", "1 trimestre", "6 meses"]},
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Construa o plano com: (1) tese/posicionamento; (2) 3 pilares de conteÃºdo com "
-            "exemplos de tÃ³picos; (3) calendÃ¡rio sugerido (ritmo + formatos); (4) mÃ©tricas "
-            "de sucesso por pilar; (5) prÃ³ximos passos acionÃ¡veis. Markdown."
+            "Construa o plano com: (1) tese/posicionamento; (2) 3 pilares de conteúdo com "
+            "exemplos de tópicos; (3) calendário sugerido (ritmo + formatos); (4) métricas "
+            "de sucesso por pilar; (5) próximos passos acionáveis. Markdown."
         ),
         user_prompt_template=(
             "Objetivo: {goal}\n"
-            "PÃºblico: {audience}\n"
+            "Público: {audience}\n"
             "Horizonte: {horizon}\n\n"
             "Construa o plano."
         ),
@@ -287,28 +287,28 @@ _MODES: dict[str, ModeSpec] = {
 
     "marketing_psychology": ModeSpec(
         key="marketing_psychology",
-        label="AnÃ¡lise PsicolÃ³gica",
-        description="Aplica gatilhos cognitivos a uma situaÃ§Ã£o de venda, oferta ou objeÃ§Ã£o.",
+        label="Análise Psicológica",
+        description="Aplica gatilhos cognitivos a uma situação de venda, oferta ou objeção.",
         inputs=[
-            {"name": "situation", "label": "SituaÃ§Ã£o", "type": "textarea", "required": True, "placeholder": "CenÃ¡rio, oferta ou objeÃ§Ã£o a tratar"},
-            {"name": "goal",      "label": "Objetivo", "type": "text",     "placeholder": "O que vocÃª quer que aconteÃ§a depois"},
+            {"name": "situation", "label": "Situação", "type": "textarea", "required": True, "placeholder": "Cenário, oferta ou objeção a tratar"},
+            {"name": "goal",      "label": "Objetivo", "type": "text",     "placeholder": "O que você quer que aconteça depois"},
         ],
         system_prompt=(
             f"{_BASE_VOICE}\n\n"
-            "Identifique 3-5 gatilhos psicolÃ³gicos relevantes (ex.: prova social, "
+            "Identifique 3-5 gatilhos psicológicos relevantes (ex.: prova social, "
             "escassez, ancoragem, reciprocidade, autoridade) e mostre como aplicar cada um "
-            "para a situaÃ§Ã£o. Para cada: explicaÃ§Ã£o curta + exemplo de frase pronta. Markdown."
+            "para a situação. Para cada: explicação curta + exemplo de frase pronta. Markdown."
         ),
         user_prompt_template=(
-            "SituaÃ§Ã£o: {situation}\n"
+            "Situação: {situation}\n"
             "Objetivo: {goal}\n\n"
-            "Mostre os gatilhos aplicÃ¡veis."
+            "Mostre os gatilhos aplicáveis."
         ),
     ),
 }
 
 
-# â”€â”€ Schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Schemas ───────────────────────────────────────────────────────────────
 
 
 class GenerateRequest(BaseModel):
@@ -331,7 +331,7 @@ class ModeListResponse(BaseModel):
     available_models: dict[str, str]
 
 
-# â”€â”€ Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Routes ────────────────────────────────────────────────────────────────
 
 
 @router.get("/modes", response_model=ModeListResponse)
@@ -358,9 +358,9 @@ def generate(body: GenerateRequest, request: Request):
     if not spec:
         raise HTTPException(status_code=404, detail=f"Unknown mode '{body.mode}'. See /marketing/modes")
 
-    # Build user prompt by templating; missing keys become "(nÃ£o informado)" so
+    # Build user prompt by templating; missing keys become "(não informado)" so
     # the model still has structure even with partial input.
-    safe_inputs = {k: (v if v not in (None, "") else "(nÃ£o informado)") for k, v in body.inputs.items()}
+    safe_inputs = {k: (v if v not in (None, "") else "(não informado)") for k, v in body.inputs.items()}
     try:
         user_prompt = spec.user_prompt_template.format_map(_DefaultDict(safe_inputs))
     except Exception as exc:
@@ -397,7 +397,6 @@ def generate(body: GenerateRequest, request: Request):
 
 
 class _DefaultDict(dict):
-    """Format-map helper: missing keys become '(nÃ£o informado)' instead of KeyError."""
+    """Format-map helper: missing keys become '(não informado)' instead of KeyError."""
     def __missing__(self, key: str) -> str:
-        return "(nÃ£o informado)"
-
+        return "(não informado)"

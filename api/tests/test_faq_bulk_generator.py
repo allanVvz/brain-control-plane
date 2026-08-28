@@ -61,6 +61,11 @@ def test_generate_faqs_for_chain_includes_skill_content_in_prompt(monkeypatch):
         return "[]"
 
     monkeypatch.setattr(faq_bulk_generator.ModelRouter, "messages_create", fake_create)
+    monkeypatch.setattr(
+        faq_bulk_generator,
+        "_load_skill_content",
+        lambda name: "Guia de escrita isolado para teste." if name == "aurora-premium-sdr" else "",
+    )
     faq_bulk_generator.generate_faqs_for_chain(_chain(), skills=("aurora-premium-sdr",))
     prompt_text = captured["messages"][0]["content"]
     assert "Skill: aurora-premium-sdr" in prompt_text

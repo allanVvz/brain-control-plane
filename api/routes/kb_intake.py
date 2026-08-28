@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import Any, Optional
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/kb-intake", tags=["kb-intake"])
 def _assert_json_serializable(result: Any) -> None:
     """Raise if `result` cannot be JSON-encoded the way FastAPI will encode it.
 
-    FastAPI serializes the return value AFTER the route handler returns â€” i.e.
+    FastAPI serializes the return value AFTER the route handler returns — i.e.
     outside the handler's try/except. A non-serializable field (e.g. a set or a
     custom object stashed in mission_state/plan_state by the tool loop) would
     surface as a raw 500 with no traceback in the response body. Calling this
@@ -251,7 +251,7 @@ def send_message(body: MessageBody, request: Request):
             "exception_type": type(exc).__name__,
             "message": (
                 "Nao consegui processar sua mensagem agora. Sua configuracao "
-                "foi mantida â€” tente novamente ou clique em Salvar se ja houver plano."
+                "foi mantida — tente novamente ou clique em Salvar se ja houver plano."
             ),
             "detail": str(exc)[:300],
             "traceback_tail": tb_text.splitlines()[-12:],
@@ -713,4 +713,3 @@ def approve_publication(session_id: str, body: ApprovePublicationBody, request: 
     session.pop("pending_graph_bundle", None)
     _save_session(session)
     return result
-

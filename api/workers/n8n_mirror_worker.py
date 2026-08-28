@@ -1,4 +1,4 @@
-﻿import os
+import os
 from datetime import datetime, timezone
 from workers.base_worker import BaseWorker
 from services import integration_service, n8n_client, supabase_client, sre_logger
@@ -86,4 +86,3 @@ class N8nMirrorWorker(BaseWorker):
                 sre_logger.error(self.name, f"failed to mirror execution id={ex.get('id')}", exc)
 
         sre_logger.info(self.name, f"synced {synced}/{len(executions)} executions")
-

@@ -1034,4 +1034,3 @@ def list_admin_connections(persona_slug: str, asset_id: str, response: Response)
         })
     response.headers["Cache-Control"] = "no-store"
     return {"asset_id": asset_id, "knowledge_node_id": knowledge_node_id, "connections": out}
-
