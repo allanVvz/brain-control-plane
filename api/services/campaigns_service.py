@@ -18,7 +18,7 @@ from typing import Any, Iterable
 
 from fastapi import HTTPException
 
-from services import event_emitter, graph_json_v2_store, supabase_client, whatsapp_outbox
+from services import event_emitter, graph_json_v2_store, supabase_client, transport_client
 
 
 DEFAULT_CONTACT_POLICY: dict[str, Any] = {
@@ -1033,22 +1033,22 @@ def send_campaign(
 
         step = int(recipient.get("commercial_attempt_count") or 0) + 1
         try:
-            whatsapp_outbox.enqueue_outbound(
-                lead=lead,
-                text=resolved["text"],
-                sender_type="campaign",
-                message_id=f"campaign:{campaign_id}:{recipient['id']}:{step}",
-                correlation_id=f"campaign:{campaign_id}:{revision['revision']}:{recipient['id']}:{step}",
-                idempotency_key=f"campaign-send:{campaign_id}:{revision['revision']}:{recipient['id']}:{step}",
-                template=resolved.get("template"),
-                campaign_scope={
+            transport_client.enqueue_campaign_outbound({
+                "lead": lead,
+                "text": resolved["text"],
+                "sender_type": "campaign",
+                "message_id": f"campaign:{campaign_id}:{recipient['id']}:{step}",
+                "correlation_id": f"campaign:{campaign_id}:{revision['revision']}:{recipient['id']}:{step}",
+                "idempotency_key": f"campaign-send:{campaign_id}:{revision['revision']}:{recipient['id']}:{step}",
+                "template": resolved.get("template"),
+                "campaign_scope": {
                     "campaign_id": campaign_id,
                     "campaign_revision": revision["revision"],
                     "campaign_recipient_id": recipient["id"],
                     "campaign_step": step,
                     "policy_checksum": recipient.get("policy_checksum"),
                 },
-            )
+            })
         except HTTPException as exc:
             _mark_recipient_send_failed(recipient["id"], f"enqueue_error:{exc.status_code}")
             failed += 1

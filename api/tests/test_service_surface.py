@@ -36,6 +36,8 @@ def test_service_identity_and_readiness_surface():
     paths = set(main.app.openapi()["paths"])
     assert "/health" in paths
     assert "/health/ready" in paths
+    assert "/messaging/campaigns" in paths
+    assert "/messaging/campaigns/{campaign_id}/send" in paths
 
 
 def test_worker_group_is_domain_scoped():
