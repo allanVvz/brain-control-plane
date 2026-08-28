@@ -1,8 +1,6 @@
 """Internal, token-authenticated conversation steps orchestrated by n8n."""
 from __future__ import annotations
 
-import hmac
-import os
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException
@@ -14,21 +12,10 @@ from schemas.conversation import (
     ConversationDecision,
     StrictModel,
 )
-from services import conversation_runtime
+from services import conversation_runtime, internal_auth
 
 
 router = APIRouter(prefix="/internal/conversations", tags=["conversations"])
-
-
-def _authorize(token: str | None) -> None:
-    expected = (os.environ.get("AI_BRAIN_WEBHOOK_TOKEN") or "").strip()
-    if not expected:
-        raise HTTPException(503, "internal webhook token is not configured")
-    if expected and not hmac.compare_digest(
-        (token or "").encode("utf-8"),
-        expected.encode("utf-8"),
-    ):
-        raise HTTPException(401, "invalid webhook token")
 
 
 class ContextRequest(StrictModel):
@@ -94,7 +81,7 @@ def context(
     body: ContextRequest,
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> ConversationContext:
-    _authorize(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     try:
         return conversation_runtime.build_context(**body.model_dump())
     except conversation_runtime.PublishedGraphUnavailable as exc:
@@ -108,7 +95,7 @@ def decide(
     body: DecisionRequest,
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> dict:
-    _authorize(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     decision, response = conversation_runtime.decide(
         body.context,
         model_observation=body.model_observation,
@@ -126,7 +113,7 @@ def commit(
     body: CommitRequest,
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> dict:
-    _authorize(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     try:
         result = conversation_runtime.commit(
             lead_ref=body.lead_ref,
@@ -158,7 +145,7 @@ def fail_safe_handoff(
     body: FailSafeHandoffRequest,
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> dict:
-    _authorize(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     lead = conversation_runtime.supabase_client.get_lead_by_ref(body.lead_ref) or {}
     conversation_runtime.supabase_client.handoff_whatsapp_lead(body.lead_ref)
     if body.diagnostic:
@@ -207,7 +194,7 @@ def technical_failure(
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> dict:
     """Quarantine a failed turn without inventing a commercial handoff."""
-    _authorize(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     lead = conversation_runtime.supabase_client.get_lead_by_ref(body.lead_ref) or {}
     conversation_runtime.supabase_client.complete_whatsapp_buffer(
         body.buffer_id,

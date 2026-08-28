@@ -8,8 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from routes.conversations import _authorize as authorize_internal
-from services import agents_service, auth_service, event_emitter, supabase_client
+from services import agents_service, auth_service, event_emitter, internal_auth, supabase_client
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 internal_router = APIRouter(prefix="/internal/agents", tags=["agents"])
@@ -210,7 +209,7 @@ def journey_event_internal(
     lead_ref: int, body: JourneyEventBody,
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> dict:
-    authorize_internal(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     return record_journey_event(lead_ref, body, None)
 
 
@@ -227,7 +226,7 @@ def purchase_completed_internal(
     lead_ref: int, body: PurchaseCompletedBody,
     x_webhook_token: str | None = Header(None, alias="X-Webhook-Token"),
 ) -> dict:
-    authorize_internal(x_webhook_token)
+    internal_auth.authorize_webhook_token(x_webhook_token)
     return _record_purchase(lead_ref, body, None)
 
 

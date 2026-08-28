@@ -23,13 +23,14 @@ from services import (
     event_emitter,
     journey_outcome,
     knowledge_graph,
+    journey_service,
     lead_qualification,
+    message_pagination,
     secret_store,
     supabase_client,
     whatsapp_outbox,
 )
-from routes import agents as agents_routes
-from routes.agents import JourneyEventBody, JourneyStateBody
+from schemas.journey import JourneyEventBody, JourneyStateBody
 from services.whatsapp_providers import get_provider
 
 router = APIRouter(prefix="/portal", tags=["portal"])
@@ -280,8 +281,9 @@ def conversation_messages(
         raise HTTPException(404, "Conversa nao encontrada.")
     # Reuse the authenticated message cursor contract; portal authorization
     # has already proved that this lead belongs to the requested persona.
-    from routes.messages import _message_page
-    return _message_page(lead_id, limit=limit, after=after, before=before)
+    return message_pagination.message_page(
+        lead_id, limit=limit, after=after, before=before,
+    )
 
 
 @router.get("/knowledge/chat-context")
@@ -524,7 +526,7 @@ def journey_event(
     persona = _persona(persona_slug, request, "edit")
     _lead(lead_id, persona["id"])
     user = auth_service.current_user(request)
-    return agents_routes.record_journey_event(lead_id, body, str(user["id"]))
+    return journey_service.record_journey_event(lead_id, body, str(user["id"]))
 
 
 @router.post("/leads/{lead_id}/journey-state")
@@ -543,7 +545,7 @@ def journey_state(
     offering = journey_outcome.business_models_for_personas(
         [persona["id"]]
     ).get(persona["id"], journey_outcome.SALES)
-    return agents_routes.set_journey_state(
+    return journey_service.set_journey_state(
         lead_id, body, str(user["id"]), offering=offering,
     )
 
