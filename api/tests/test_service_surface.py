@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import base64
 import json
 import os
@@ -22,7 +23,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 FORBIDDEN_PREFIXES = (
     "/agents",
-    "/agent-harness",
     "/wa-validator",
     "/webhooks",
     "/messages",
@@ -35,6 +35,12 @@ def test_service_identity_and_readiness_surface():
     paths = set(main.app.openapi()["paths"])
     assert "/health" in paths
     assert "/health/ready" in paths
+    assert "/messaging/campaigns" in paths
+    assert "/messaging/campaigns/{campaign_id}/send" in paths
+    assert "/internal/v1/control-plane/assets/{asset_id}/attach-inbound-graph" in paths
+    assert "/agent-harness/sessions" in paths
+    assert "/sofia/graph-command" in paths
+    assert "/qa/reset-destructive" in paths
 
 
 def test_worker_group_is_domain_scoped():
@@ -69,8 +75,18 @@ def test_runtime_and_transport_engines_are_absent_from_control_plane():
         "api/services/media_ingest.py",
         "api/services/wa_validator_service.py",
         "api/services/asset_graph_contract.py",
+        "api/services/graph_agent_runtime_v3.py",
+        "api/services/graph_proof_checker_v3.py",
+        "api/services/journey_outcome.py",
+        "api/services/lead_qualification.py",
+        "api/services/whatsapp_providers",
+        "api/services/whatsapp_outbox.py",
     )
-    assert [path for path in forbidden if (ROOT / path).exists()] == []
+    assert [
+        path for path in forbidden
+        if (ROOT / path).is_file()
+        or ((ROOT / path).is_dir() and any((ROOT / path).rglob("*.py")))
+    ] == []
 
 
 def _jwt_for_role(role: str) -> str:
@@ -109,3 +125,39 @@ def test_readiness_uses_image_schema_requirement_and_build_metadata(monkeypatch)
 
 def test_legacy_database_module_is_control_plane_repository_alias():
     assert supabase_client is control_plane_repository
+
+
+def test_control_plane_repository_has_only_the_reachable_domain_surface():
+    source = (ROOT / "api" / "repositories" / "control_plane.py").read_text(encoding="utf-8")
+    functions = {
+        node.name
+        for node in ast.parse(source).body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+    assert len(functions) == 199
+    assert functions.isdisjoint({
+        "claim_conversation_commit",
+        "claim_pending_media_assets",
+        "claim_whatsapp_buffer",
+        "commit_graph_turn_and_outbox_v4",
+        "enqueue_whatsapp_message",
+        "requeue_waiting_human_whatsapp_buffer",
+    })
+
+
+def test_internal_inbound_asset_graph_command_is_authenticated(monkeypatch):
+    from routes import internal_assets
+
+    calls = []
+    monkeypatch.setattr(internal_assets.internal_auth, "authorize_webhook_token", calls.append)
+    monkeypatch.setattr(
+        internal_assets.inbound_media_graph,
+        "attach",
+        lambda asset_id: {"attached": True, "asset_id": asset_id},
+    )
+
+    result = internal_assets.attach_inbound_graph("asset-1", "internal-token")
+
+    assert calls == ["internal-token"]
+    assert result == {"attached": True, "asset_id": "asset-1"}

@@ -11,7 +11,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Iterator
 
-import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -21,9 +20,7 @@ from services import (
     campaigns_service,
     context_cards as context_cards_service,
     event_emitter,
-    journey_outcome,
     knowledge_graph,
-    lead_qualification,
     message_pagination,
     runtime_client,
     secret_store,
@@ -31,7 +28,6 @@ from services import (
     transport_client,
 )
 from schemas.journey import JourneyEventBody, JourneyStateBody
-from services.whatsapp_providers import get_provider
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -151,6 +147,16 @@ def _lead(lead_id: int, persona_id: str) -> dict[str, Any]:
     return row
 
 
+def _runtime_leads(
+    rows: list[dict[str, Any]],
+    persona_id: str,
+    validation_scope: str = "all",
+) -> list[dict[str, Any]]:
+    return runtime_client.decorate_leads(
+        rows, persona_id=persona_id, validation_scope=validation_scope
+    )
+
+
 def _binding_for_persona(persona_id: str) -> dict[str, Any] | None:
     return next(
         (
@@ -194,16 +200,16 @@ def conversations(request: Request, persona_slug: str = Query(...)):
         for row in rows
         if row.get("lead_ref") is not None
     ])
-    resumos = journey_outcome.summaries_for_leads(persona["id"], list(leads_by_ref))
-    business_model = journey_outcome.business_models_for_personas(
-        [persona["id"]]
-    ).get(persona["id"], journey_outcome.SALES)
+    runtime_by_ref = {
+        int(lead["id"]): lead
+        for lead in _runtime_leads(list(leads_by_ref.values()), persona["id"], "exclude")
+        if lead.get("id") is not None
+    }
     decorated = []
     for row in rows:
         ref = int(row.get("lead_ref") or 0)
-        lead = leads_by_ref.get(ref, {})
-        extra = lead_qualification.decorate_lead(lead)
-        if extra.get("validation", {}).get("is_validation"):
+        extra = runtime_by_ref.get(ref)
+        if extra is None:
             continue
         decorated.append({
             **row,
@@ -211,14 +217,13 @@ def conversations(request: Request, persona_slug: str = Query(...)):
             "qualification_score": extra.get("qualification_score") or 0,
             "qualification_signals": extra.get("qualification_signals") or [],
             "validation": extra.get("validation") or {},
-            **(resumos.get(ref) or {
-                "journey_outcome": None, "lead_converted": False,
-                "journey_is_open": False, "journey_sequence": 0,
-            }),
-            # O carimbo permanente vence a derivacao por `converted_at`.
-            "lead_converted": journey_outcome.lead_converted(lead)
-            or bool((resumos.get(ref) or {}).get("lead_converted")),
-            "business_model": business_model,
+            **{
+                key: extra.get(key)
+                for key in (
+                    "journey_outcome", "lead_converted", "journey_is_open",
+                    "journey_sequence", "business_model",
+                )
+            },
         })
     return decorated
 
@@ -277,7 +282,7 @@ def conversation_messages(
 ):
     persona = _persona(persona_slug, request)
     lead = _lead(lead_id, persona["id"])
-    if lead_qualification.is_validation_lead(lead):
+    if not _runtime_leads([lead], persona["id"], "exclude"):
         raise HTTPException(404, "Conversa nao encontrada.")
     # Reuse the authenticated message cursor contract; portal authorization
     # has already proved that this lead belongs to the requested persona.
@@ -400,20 +405,17 @@ async def send_message(request: Request, persona_slug: str = Query(...)):
 def leads(request: Request, persona_slug: str = Query(...), limit: int = Query(500, le=2000)):
     persona = _persona(persona_slug, request)
     rows = supabase_client.get_leads_for_persona_ids([persona["id"]], limit=limit, offset=0)
-    return journey_outcome.decorate_leads(
-        lead_qualification.filter_validation_scope(rows, "exclude"), persona["id"],
-    )
+    return _runtime_leads(rows, persona["id"], "exclude")
 
 
 @router.get("/leads/{lead_id}")
 def lead_detail(lead_id: int, request: Request, persona_slug: str = Query(...)):
     persona = _persona(persona_slug, request)
     lead = _lead(lead_id, persona["id"])
-    if lead_qualification.is_validation_lead(lead):
+    decorated = _runtime_leads([lead], persona["id"], "exclude")
+    if not decorated:
         raise HTTPException(404, "Lead nao encontrada.")
-    return journey_outcome.decorate_leads(
-        [lead_qualification.decorate_lead(lead)], persona["id"],
-    )[0]
+    return decorated[0]
 
 
 @router.patch("/leads/{lead_id}")
@@ -431,7 +433,10 @@ def update_lead(lead_id: int, body: LeadPatchBody, request: Request, persona_slu
         # never overwritten by a later re-PATCH while already "perdido".
         metadata = dict(lead.get("metadata") or {})
         qualification = dict(metadata.get("qualification") or {})
-        qualification["score_at_perdido"] = lead_qualification.score_for_display(lead)
+        decorated = _runtime_leads([lead], persona["id"])
+        qualification["score_at_perdido"] = (
+            (decorated[0] if decorated else {}).get("qualification_score") or 0
+        )
         metadata["qualification"] = qualification
     if body.notes is not None or body.tags is not None:
         metadata = dict(metadata if metadata is not None else (lead.get("metadata") or {}))
@@ -455,7 +460,7 @@ def update_lead(lead_id: int, body: LeadPatchBody, request: Request, persona_slu
 
 def _set_ai(lead_id: int, request: Request, persona_slug: str, paused: bool):
     persona = _persona(persona_slug, request, "edit")
-    _lead(lead_id, persona["id"])
+    lead = _lead(lead_id, persona["id"])
     user = auth_service.current_user(request)
     return runtime_client.lead_action(
         lead_id,
@@ -478,7 +483,7 @@ def journey_event(
     persona da URL, checagem que a rota de `/agents` nao faz.
     """
     persona = _persona(persona_slug, request, "edit")
-    _lead(lead_id, persona["id"])
+    lead = _lead(lead_id, persona["id"])
     user = auth_service.current_user(request)
     return runtime_client.record_journey_event(
         lead_id,
@@ -498,11 +503,10 @@ def journey_state(
     produto e comprado e entregue, servico e agendado e concluido.
     """
     persona = _persona(persona_slug, request, "edit")
-    _lead(lead_id, persona["id"])
+    lead = _lead(lead_id, persona["id"])
     user = auth_service.current_user(request)
-    offering = journey_outcome.business_models_for_personas(
-        [persona["id"]]
-    ).get(persona["id"], journey_outcome.SALES)
+    decorated = _runtime_leads([lead], persona["id"])
+    offering = str((decorated[0] if decorated else {}).get("business_model") or "sales")
     return runtime_client.set_journey_state(
         lead_id,
         body.model_dump(mode="json"),
@@ -674,10 +678,11 @@ def portal_create_template(body: PortalTemplateCreateBody, request: Request):
 @router.get("/pipeline")
 def pipeline(request: Request, persona_slug: str = Query(...)):
     persona = _persona(persona_slug, request)
-    rows = [
-        lead_qualification.decorate_lead(row)
-        for row in supabase_client.get_leads_for_persona_ids([persona["id"]], limit=2000, offset=0)
-    ]
+    rows = _runtime_leads(
+        supabase_client.get_leads_for_persona_ids([persona["id"]], limit=2000, offset=0),
+        persona["id"],
+        "exclude",
+    )
     portal_config = dict((persona.get("config") or {}).get("portal") or {})
     configured_labels = dict(portal_config.get("stage_labels") or {})
     conversion_stage = str(portal_config.get("conversion_stage") or "fechado")
@@ -835,11 +840,8 @@ def select_whatsapp_provider(slug: str, body: WhatsAppProviderBody, request: Req
             public_base,
         )
         try:
-            get_provider("evolution_baileys").provision_instance(
-                instance_key,
-                instance_token,
-                webhook_url,
-                webhook_token=callback,
+            transport_client.provision_evolution(
+                str(target["id"]), webhook_url=webhook_url, webhook_token=callback
             )
         except Exception:
             # A draft without a provisioned remote instance must not become active.
@@ -891,34 +893,14 @@ def _evolution_action(slug: str, request: Request, action: str):
     binding = _binding_for_persona(persona["id"])
     if not binding or binding.get("provider") != "evolution_baileys":
         raise HTTPException(404, "Canal Evolution nao configurado.")
-    provider = get_provider("evolution_baileys")
-    try:
-        result = getattr(provider, action)(binding)
-    except httpx.HTTPStatusError as exc:
-        if action != "get_qr_code" or exc.response.status_code != 404 or not binding.get("active"):
-            raise
-        instance_key = str(binding.get("provider_instance_key") or "")
-        instance_token = secret_store.decrypt_secret(binding.get("provider_secret_ciphertext"))
-        public_base = (os.environ.get("AI_BRAIN_PUBLIC_API_URL") or "").rstrip("/")
-        if not instance_key or not instance_token or not public_base:
-            raise HTTPException(503, "Binding Evolution incompleto para reprovisionamento.") from exc
-        webhook_url, callback = _evolution_webhook_target(
-            binding["id"],
-            public_base,
-        )
-        provider.provision_instance(
-            instance_key,
-            instance_token,
-            webhook_url,
-            webhook_token=callback,
-        )
-        supabase_client.update_workflow_binding(binding["id"], {"connection_status": "connecting"})
-        result = provider.get_qr_code(binding)
-    if action == "logout_instance":
-        supabase_client.update_workflow_binding(binding["id"], {"connection_status": "disconnected"})
-    elif action == "get_qr_code" and result.get("status") == "qr_ready":
-        supabase_client.update_workflow_binding(binding["id"], {"connection_status": "qr_ready"})
-    return result
+    public_base = (os.environ.get("AI_BRAIN_PUBLIC_API_URL") or "").rstrip("/")
+    webhook_url = callback = None
+    if public_base:
+        webhook_url, callback = _evolution_webhook_target(binding["id"], public_base)
+    return transport_client.evolution_action(
+        str(binding["id"]), action,
+        webhook_url=webhook_url, webhook_token=callback,
+    )
 
 
 @router.post("/personas/{slug}/channels/whatsapp/evolution/connect")
