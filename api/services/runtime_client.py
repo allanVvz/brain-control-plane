@@ -96,3 +96,24 @@ def lead_action(
         {},
         actor_user_id=actor_user_id,
     )
+
+
+def decorate_leads(
+    leads: list[dict[str, Any]],
+    *,
+    persona_id: str | None = None,
+    validation_scope: str = "all",
+) -> list[dict[str, Any]]:
+    result = _post(
+        "/internal/v1/runtime/leads/decorate",
+        {
+            "leads": leads,
+            "persona_id": persona_id,
+            "validation_scope": validation_scope,
+        },
+        actor_user_id=None,
+    )
+    items = result.get("items")
+    if not isinstance(items, list):
+        raise HTTPException(502, "Conversation runtime returned invalid lead decorations.")
+    return [item for item in items if isinstance(item, dict)]
