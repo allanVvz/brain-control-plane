@@ -1,8 +1,8 @@
 # Multi-stage production image for the AI Brain backend.
 # The same image runs the API (gunicorn) and the workers (workers.runner);
 # the compose file overrides the command for the workers service.
-# Build context is the repository root. Only api/ and the runtime SDR catalog
-# are copied, so image contents stay tied to the release SHA.
+# Build context is the repository root. .dockerignore excludes tests and
+# one-time scripts; authoring catalogs and the Sofia vault remain available.
 
 # ── Builder ───────────────────────────────────────────────────────────────
 FROM python:3.12-slim AS builder
