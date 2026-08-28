@@ -51,3 +51,20 @@ def test_journey_state_is_sent_to_versioned_runtime_endpoint(monkeypatch):
         "X-Brain-Actor-Id": "user-7",
     }
     assert captured["params"] == {"offering": "sales"}
+
+
+def test_resume_is_sent_once_to_runtime_with_actor(monkeypatch):
+    monkeypatch.setenv("BRAIN_RUNTIME_URL", "https://runtime.internal")
+    monkeypatch.setenv("AI_BRAIN_WEBHOOK_TOKEN", "secret-token")
+    captured = {}
+    monkeypatch.setattr(
+        runtime_client.httpx,
+        "Client",
+        lambda **kwargs: _Client(captured, **kwargs),
+    )
+
+    runtime_client.lead_action(42, "resume", actor_user_id="user-7")
+
+    assert captured["url"] == "https://runtime.internal/internal/v1/runtime/leads/42/resume"
+    assert captured["json"] == {}
+    assert captured["headers"]["X-Brain-Actor-Id"] == "user-7"

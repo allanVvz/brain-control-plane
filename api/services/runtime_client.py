@@ -81,3 +81,18 @@ def set_journey_state(
         actor_user_id=actor_user_id,
         params={"offering": offering},
     )
+
+
+def lead_action(
+    lead_ref: int,
+    action: str,
+    *,
+    actor_user_id: str | None,
+) -> dict:
+    if action not in {"pause", "resume", "acknowledge-handoff", "handoff"}:
+        raise ValueError(f"Unsupported runtime lead action: {action}")
+    return _post(
+        f"/internal/v1/runtime/leads/{lead_ref}/{action}",
+        {},
+        actor_user_id=actor_user_id,
+    )
