@@ -11,7 +11,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Iterator
 
-import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -29,7 +28,6 @@ from services import (
     transport_client,
 )
 from schemas.journey import JourneyEventBody, JourneyStateBody
-from services.whatsapp_providers import get_provider
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -842,11 +840,8 @@ def select_whatsapp_provider(slug: str, body: WhatsAppProviderBody, request: Req
             public_base,
         )
         try:
-            get_provider("evolution_baileys").provision_instance(
-                instance_key,
-                instance_token,
-                webhook_url,
-                webhook_token=callback,
+            transport_client.provision_evolution(
+                str(target["id"]), webhook_url=webhook_url, webhook_token=callback
             )
         except Exception:
             # A draft without a provisioned remote instance must not become active.
@@ -898,34 +893,14 @@ def _evolution_action(slug: str, request: Request, action: str):
     binding = _binding_for_persona(persona["id"])
     if not binding or binding.get("provider") != "evolution_baileys":
         raise HTTPException(404, "Canal Evolution nao configurado.")
-    provider = get_provider("evolution_baileys")
-    try:
-        result = getattr(provider, action)(binding)
-    except httpx.HTTPStatusError as exc:
-        if action != "get_qr_code" or exc.response.status_code != 404 or not binding.get("active"):
-            raise
-        instance_key = str(binding.get("provider_instance_key") or "")
-        instance_token = secret_store.decrypt_secret(binding.get("provider_secret_ciphertext"))
-        public_base = (os.environ.get("AI_BRAIN_PUBLIC_API_URL") or "").rstrip("/")
-        if not instance_key or not instance_token or not public_base:
-            raise HTTPException(503, "Binding Evolution incompleto para reprovisionamento.") from exc
-        webhook_url, callback = _evolution_webhook_target(
-            binding["id"],
-            public_base,
-        )
-        provider.provision_instance(
-            instance_key,
-            instance_token,
-            webhook_url,
-            webhook_token=callback,
-        )
-        supabase_client.update_workflow_binding(binding["id"], {"connection_status": "connecting"})
-        result = provider.get_qr_code(binding)
-    if action == "logout_instance":
-        supabase_client.update_workflow_binding(binding["id"], {"connection_status": "disconnected"})
-    elif action == "get_qr_code" and result.get("status") == "qr_ready":
-        supabase_client.update_workflow_binding(binding["id"], {"connection_status": "qr_ready"})
-    return result
+    public_base = (os.environ.get("AI_BRAIN_PUBLIC_API_URL") or "").rstrip("/")
+    webhook_url = callback = None
+    if public_base:
+        webhook_url, callback = _evolution_webhook_target(binding["id"], public_base)
+    return transport_client.evolution_action(
+        str(binding["id"]), action,
+        webhook_url=webhook_url, webhook_token=callback,
+    )
 
 
 @router.post("/personas/{slug}/channels/whatsapp/evolution/connect")

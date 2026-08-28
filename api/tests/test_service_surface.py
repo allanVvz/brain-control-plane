@@ -73,8 +73,14 @@ def test_runtime_and_transport_engines_are_absent_from_control_plane():
         "api/services/media_ingest.py",
         "api/services/wa_validator_service.py",
         "api/services/asset_graph_contract.py",
+        "api/services/whatsapp_providers",
+        "api/services/whatsapp_outbox.py",
     )
-    assert [path for path in forbidden if (ROOT / path).exists()] == []
+    assert [
+        path for path in forbidden
+        if (ROOT / path).is_file()
+        or ((ROOT / path).is_dir() and any((ROOT / path).rglob("*.py")))
+    ] == []
 
 
 def _jwt_for_role(role: str) -> str:
