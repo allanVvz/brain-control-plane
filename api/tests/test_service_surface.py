@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import base64
 import json
 import os
@@ -109,3 +110,22 @@ def test_readiness_uses_image_schema_requirement_and_build_metadata(monkeypatch)
 
 def test_legacy_database_module_is_control_plane_repository_alias():
     assert supabase_client is control_plane_repository
+
+
+def test_control_plane_repository_has_only_the_reachable_domain_surface():
+    source = (ROOT / "api" / "repositories" / "control_plane.py").read_text(encoding="utf-8")
+    functions = {
+        node.name
+        for node in ast.parse(source).body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+    assert len(functions) == 222
+    assert functions.isdisjoint({
+        "claim_conversation_commit",
+        "claim_pending_media_assets",
+        "claim_whatsapp_buffer",
+        "commit_graph_turn_and_outbox_v4",
+        "enqueue_whatsapp_message",
+        "requeue_waiting_human_whatsapp_buffer",
+    })
