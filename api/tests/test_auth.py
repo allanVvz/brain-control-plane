@@ -44,7 +44,7 @@ def test_production_cookie_is_always_secure(monkeypatch):
 
 def test_strict_environment_requires_strong_auth_secret(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://db.example.test")
-    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "service-key")
+    monkeypatch.setenv("BRAIN_DB_JWT", "role-scoped-test-key")
     monkeypatch.setenv("ALLOWED_ORIGINS", "https://dashboard.example.test")
     monkeypatch.setenv("AI_BRAIN_AUTH_SECRET", "short")
 
