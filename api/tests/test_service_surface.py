@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+from pathlib import Path
 
 import pytest
 
@@ -14,6 +15,9 @@ import main
 from repositories import control_plane as control_plane_repository
 from services import supabase_client
 from workers.runner import WORKERS
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 FORBIDDEN_PREFIXES = (
@@ -51,6 +55,22 @@ def test_public_surface_excludes_other_domains():
         if path == prefix or path.startswith(prefix + "/")
     )
     assert offenders == []
+
+
+def test_control_plane_image_excludes_tests_and_one_time_scripts():
+    dockerignore = (ROOT / ".dockerignore").read_text(encoding="utf-8")
+    for excluded in ("api/scripts/", "api/tests/", "tests/"):
+        assert excluded in dockerignore
+
+
+def test_runtime_and_transport_engines_are_absent_from_control_plane():
+    forbidden = (
+        "api/services/conversation_runtime.py",
+        "api/services/media_ingest.py",
+        "api/services/wa_validator_service.py",
+        "api/services/asset_graph_contract.py",
+    )
+    assert [path for path in forbidden if (ROOT / path).exists()] == []
 
 
 def _jwt_for_role(role: str) -> str:
