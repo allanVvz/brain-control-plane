@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from services import auth_service, supabase_client
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
@@ -48,4 +48,3 @@ def pipeline_events(
             rows.extend(supabase_client.get_events(limit=limit, event_type=event_type, persona_id=pid))
         return sorted(rows, key=lambda row: str(row.get("created_at") or ""), reverse=True)[:limit]
     return supabase_client.get_events(limit=limit, event_type=event_type, persona_id=persona_id)
-

@@ -1,4 +1,4 @@
-﻿"""Internal, token-authenticated conversation steps orchestrated by n8n."""
+"""Internal, token-authenticated conversation steps orchestrated by n8n."""
 from __future__ import annotations
 
 import hmac
@@ -240,4 +240,3 @@ def technical_failure(
         "handoff": False,
         "ai_paused": bool(lead.get("ai_paused")),
     }
-

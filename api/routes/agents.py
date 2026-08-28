@@ -1,4 +1,4 @@
-﻿"""Authenticated SDR journey and commercial conversion contracts."""
+"""Authenticated SDR journey and commercial conversion contracts."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -250,4 +250,3 @@ def transition_conversion(conversion_id: UUID, body: ConversionStatusBody, reque
         )
     except Exception as exc:
         raise HTTPException(409, "Conversion status could not be changed") from exc
-

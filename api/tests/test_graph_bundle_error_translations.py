@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -44,4 +44,3 @@ def test_translate_errors_preserves_order():
     assert len(results) == 2
     assert results[0]["code"] == raw[0]
     assert results[1]["code"] == raw[1]
-

@@ -1,4 +1,4 @@
-﻿from workers import n8n_mirror_worker
+from workers import n8n_mirror_worker
 
 
 def test_mirror_requests_execution_data_and_persists_node_errors(monkeypatch):
@@ -19,7 +19,7 @@ def test_mirror_requests_execution_data_and_persists_node_errors(monkeypatch):
                 "status": "success",
                 "startedAt": "2026-08-04T20:57:02Z",
                 "stoppedAt": "2026-08-04T20:57:03Z",
-                "workflowData": {"name": "Brain â€” Persona â€” ConversaÃ§Ã£o"},
+                "workflowData": {"name": "Brain — Persona — Conversação"},
                 "data": {
                     "resultData": {
                         "runData": {
@@ -56,4 +56,3 @@ def test_mirror_requests_execution_data_and_persists_node_errors(monkeypatch):
     ]
     assert rows[0]["persona_id"] == "p1"
     assert rows[0]["lead_id"] == "41"
-

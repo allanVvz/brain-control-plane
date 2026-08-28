@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -126,4 +126,3 @@ def test_generate_faqs_route_returns_ok_false_when_generation_empty(monkeypatch)
     body = knowledge_routes.GenerateFaqsBody(max_questions=5)
     result = knowledge_routes.generate_faqs_for_graph_node(NODE_PRODUCT, body, request=_FakeRequest())
     assert result == {"ok": False, "faqs": [], "error": "FAQ generation produced no usable output"}
-

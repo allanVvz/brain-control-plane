@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
@@ -59,4 +59,3 @@ def change_password(body: ChangePasswordBody, request: Request):
     user = auth_service.current_user(request)
     auth_service.change_password(user["id"], body.current_password, body.new_password)
     return {"ok": True, "must_change_password": False}
-

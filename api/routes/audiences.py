@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -148,4 +148,3 @@ def audience_leads(audience_id: str, request: Request, limit: int = Query(1000, 
         offset=offset,
     )
     return {"audience": audience, "leads": rows}
-

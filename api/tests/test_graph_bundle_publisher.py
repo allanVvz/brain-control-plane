@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import sys
@@ -196,4 +196,3 @@ def test_activate_staged_bundle_rejects_publication_of_another_persona(monkeypat
         )
 
     assert client.rpc_calls == []
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import hashlib
@@ -36,7 +36,7 @@ router = APIRouter(prefix="/portal", tags=["portal"])
 
 PIPELINE_STAGES = [
     ("novo", "Novo"),
-    ("nao_qualificado", "NÃ£o qualificado"),
+    ("nao_qualificado", "Não qualificado"),
     ("contatado", "Contatado"),
     ("engajado", "Engajado"),
     ("qualificado", "Qualificado"),
@@ -1018,4 +1018,3 @@ def events_stream(request: Request, persona_slug: str = Query(...)):
 def await_disconnected(_request: Request) -> bool:
     # Sync generator cannot await Request.is_disconnected; failed writes close it.
     return False
-

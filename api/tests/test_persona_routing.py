@@ -1,11 +1,11 @@
-﻿"""PATCH/GET /personas/{slug}/routing.
+"""PATCH/GET /personas/{slug}/routing.
 
 Regression coverage for a real bug found live this session: the routing UI
 only ever read `personas.process_mode` (a legacy column), never the
 `workflow_bindings.metadata.decision_owner` that actually governs live
 WhatsApp dispatch. decision_owner had been changed directly on a binding
 (as production hotfixes did repeatedly) without process_mode ever being
-touched â€” so the settings UI showed a stale engine while automation
+touched — so the settings UI showed a stale engine while automation
 silently ran something else. Also covers the "orquestrador" placeholder
 engine discovered during the same investigation.
 """
@@ -51,7 +51,7 @@ def test_mask_routing_prefers_live_decision_owner_over_stale_process_mode(monkey
         ],
     )
     # process_mode says "internal" (deterministic) but the live binding says
-    # n8n_agents â€” the binding must win.
+    # n8n_agents — the binding must win.
     masked = personas._mask_routing(_routing_row(process_mode="internal"))
     assert masked["conversation_mode"] == "n8n_agents"
     assert masked["model_required"] is True
@@ -156,7 +156,7 @@ def test_routing_readiness_accepts_complete_n8n_v3(monkeypatch):
 
 def test_update_routing_accepts_orquestrador_without_requiring_deepseek(monkeypatch):
     """Regression test: orquestrador has no backend implementation yet, so
-    switching to it must never require (or touch) DeepSeek provisioning â€”
+    switching to it must never require (or touch) DeepSeek provisioning —
     only mark the binding so the dispatch worker's existing
     'unsupported decision owner' guard takes over."""
     from routes import personas
@@ -216,7 +216,7 @@ def test_update_routing_rejects_unknown_conversation_mode(monkeypatch):
 
 def test_update_routing_n8n_agents_resyncs_the_live_workflow(monkeypatch):
     """Regression test: switching to n8n_agents used to only update
-    workflow_bindings metadata (webhook url / workflow id) â€” it never
+    workflow_bindings metadata (webhook url / workflow id) — it never
     rebuilt or republished the actual n8n workflow content, which had to be
     done by hand over SSH every time all session. The settings UI action
     must trigger that resync itself."""
@@ -276,7 +276,7 @@ def test_update_routing_n8n_agents_resyncs_the_live_workflow(monkeypatch):
 def test_update_routing_auto_creates_the_workflow_when_credential_exists_but_workflow_is_missing(monkeypatch):
     """Regression test for the exact bug found live: baita-conveniencia had
     a DeepSeek credential already provisioned (enabled, connected) but no
-    n8n_workflow_id â€” switching to n8n_agents in the UI errored with
+    n8n_workflow_id — switching to n8n_agents in the UI errored with
     "Configure a chave DeepSeek..." even though a key was already
     configured. The fix must build the workflow from the existing
     credential instead of demanding the key again."""
@@ -377,4 +377,3 @@ def test_update_routing_has_no_persona_wide_automation_field():
         raise AssertionError("legacy automation_mode must be rejected")
     except ValidationError:
         pass
-

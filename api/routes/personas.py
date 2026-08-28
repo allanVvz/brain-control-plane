@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 import secrets
 import time
@@ -41,7 +41,7 @@ _KNOWN_CONVERSATION_MODES = {"deterministic", "n8n_agents", "orquestrador"}
 
 
 def _active_binding(persona_id: str | None) -> dict:
-    """The routing switch that actually governs live dispatch â€” read
+    """The routing switch that actually governs live dispatch — read
     straight from the active binding, not the legacy process_mode column.
 
     Confirmed live this session: decision_owner can be changed directly on
@@ -304,7 +304,7 @@ def update_routing(slug: str, body: RoutingUpdate, request: Request):
                 raise HTTPException(400, "routing mode fields conflict")
             payload["process_mode"] = normalized
         # "orquestrador" has no legacy process_mode equivalent yet (that
-        # column only understands internal/n8n) â€” leave it untouched
+        # column only understands internal/n8n) — leave it untouched
         # rather than write an invalid value into a still-read legacy field.
     if body.process_mode is not None:
         if body.process_mode not in {"internal", "n8n"}:
@@ -350,7 +350,7 @@ def update_routing(slug: str, body: RoutingUpdate, request: Request):
                 )
             # Build (or rebuild) the live n8n workflow *before* pointing the
             # binding at it, so switching to n8n_agents always ends with a
-            # real, existing workflow id and webhook path â€” including the
+            # real, existing workflow id and webhook path — including the
             # first time this persona is ever switched, when no workflow
             # exists yet. The credential is reused as-is; it's the only
             # place the raw DeepSeek key still lives once saved.
@@ -532,4 +532,3 @@ def test_outbound_webhook(slug: str, request: Request):
     except Exception as exc:
         logger.warning("routing test failed for %s: %s", slug, exc)
         return {"ok": False, "status": None, "error": str(exc)[:300]}
-

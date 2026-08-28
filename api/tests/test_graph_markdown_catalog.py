@@ -1,4 +1,4 @@
-﻿import json
+import json
 import sys
 from pathlib import Path
 
@@ -25,9 +25,9 @@ def test_aurora_markdown_contract_and_catalog():
         node for node in normalized.nodes
         if node.node_type in graph_markdown.FACTUAL_NODE_TYPES
     ]
-    assert len(normalized.nodes) == 59
-    assert len(normalized.edges) == 80
-    assert len(factual) == 57
+    assert len(normalized.nodes) == 138
+    assert len(normalized.edges) == 166
+    assert len(factual) == 136
     assert all((node.data or {}).get("markdown") for node in factual)
 
     faq_nodes = [node for node in factual if node.node_type == "faq"]
@@ -36,11 +36,11 @@ def test_aurora_markdown_contract_and_catalog():
         edge for edge in normalized.edges
         if edge.target == embedded.id and edge.source in {node.id for node in faq_nodes}
     ]
-    assert len(faq_nodes) == 23
-    assert len(faq_edges) == 23
-    assert len({edge.source for edge in faq_edges}) == 23
+    assert len(faq_nodes) == 88
+    assert len(faq_edges) == 30
+    assert len({edge.source for edge in faq_edges}) == 30
     assert all(node.data["markdown_document"] is True for node in faq_nodes)
-    assert all(node.data["question_count"] == 1 for node in faq_nodes)
+    assert {node.data["question_count"] for node in faq_nodes} == {1, 6}
 
     catalog = knowledge_catalog.project_graph(
         normalized,
@@ -49,10 +49,10 @@ def test_aurora_markdown_contract_and_catalog():
         persona_id="aurora-id",
         persona_name="Aurora",
     )
-    assert catalog["graph"]["document_count"] == 57
+    assert catalog["graph"]["document_count"] == 136
     assert catalog["categories"][0]["key"] == "faqs"
-    assert catalog["categories"][0]["count"] == 23
-    assert catalog["embedded"]["faq_count"] == 23
+    assert catalog["categories"][0]["count"] == 88
+    assert catalog["embedded"]["faq_count"] == 30
 
 
 def test_validated_empty_factual_node_is_rejected():
@@ -112,4 +112,3 @@ def test_operator_context_prioritizes_last_decision_and_keeps_legacy_arrays():
     assert [item["id"] for item in result["operator_context"]["primary"]] == ["product"]
     assert [item["id"] for item in result["operator_context"]["faq_rules"]] == ["faq"]
     assert result["operator_context"]["graph_path"][0]["title"] == "Aurora"
-

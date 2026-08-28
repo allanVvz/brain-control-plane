@@ -1,4 +1,4 @@
-﻿import os
+import os
 from services import supabase_client, sre_logger
 from services.knowledge_service import sync_from_sheets
 from workers.base_worker import BaseWorker
@@ -14,7 +14,7 @@ class KbSyncWorker(BaseWorker):
         if not os.path.exists(_CREDS_PATH):
             sre_logger.warn(
                 self.name,
-                f"Google credentials not found at '{_CREDS_PATH}' â€” standby, skipping sync",
+                f"Google credentials not found at '{_CREDS_PATH}' — standby, skipping sync",
             )
             return
 
@@ -33,4 +33,3 @@ class KbSyncWorker(BaseWorker):
                 sre_logger.warn(self.name, f"credentials missing mid-run for persona={persona['slug']}", exc)
             except Exception as exc:
                 sre_logger.error(self.name, f"sync failed for persona={persona['slug']}", exc)
-

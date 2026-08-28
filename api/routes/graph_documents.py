@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Optional
 
@@ -556,4 +556,3 @@ def graph_document_version(
         "checksum": graph.content_checksum or graph_json_v2_store.checksum_graph(graph),
         "graph_json": graph.model_dump(mode="json"),
     }
-

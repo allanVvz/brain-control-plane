@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import secrets
 from typing import Any
@@ -165,4 +165,3 @@ def revoke_member(slug: str, user_id: str, request: Request):
     if not rows:
         raise HTTPException(404, "Membro nao encontrado.")
     return {"ok": True}
-

@@ -1,4 +1,4 @@
-﻿"""Regression coverage for persona-scoped WhatsApp binding provisioning."""
+"""Regression coverage for persona-scoped WhatsApp binding provisioning."""
 from __future__ import annotations
 
 import sys
@@ -53,4 +53,3 @@ def test_new_persona_cannot_claim_another_personas_phone_number(monkeypatch):
 
     assert error.value.status_code == 409
     assert "reassociacao auditada" in str(error.value.detail)
-

@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response
 from fastapi.testclient import TestClient
 
 from middleware.auth import auth_middleware
@@ -44,7 +44,7 @@ def test_production_cookie_is_always_secure(monkeypatch):
 
 def test_strict_environment_requires_strong_auth_secret(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://db.example.test")
-    monkeypatch.setenv("BRAIN_CONTROL_PLANE_DB_KEY", "service-key")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "service-key")
     monkeypatch.setenv("ALLOWED_ORIGINS", "https://dashboard.example.test")
     monkeypatch.setenv("AI_BRAIN_AUTH_SECRET", "short")
 
@@ -103,4 +103,3 @@ def test_auth_middleware_disables_cache_for_unauthorized_and_validation_response
     for response in (unauthorized, invalid):
         assert response.headers["cache-control"] == "no-store"
         assert response.headers["pragma"] == "no-cache"
-
