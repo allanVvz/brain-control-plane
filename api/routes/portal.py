@@ -23,9 +23,9 @@ from services import (
     event_emitter,
     journey_outcome,
     knowledge_graph,
-    journey_service,
     lead_qualification,
     message_pagination,
+    runtime_client,
     secret_store,
     supabase_client,
     whatsapp_outbox,
@@ -526,7 +526,11 @@ def journey_event(
     persona = _persona(persona_slug, request, "edit")
     _lead(lead_id, persona["id"])
     user = auth_service.current_user(request)
-    return journey_service.record_journey_event(lead_id, body, str(user["id"]))
+    return runtime_client.record_journey_event(
+        lead_id,
+        body.model_dump(mode="json"),
+        actor_user_id=str(user["id"]),
+    )
 
 
 @router.post("/leads/{lead_id}/journey-state")
@@ -545,8 +549,11 @@ def journey_state(
     offering = journey_outcome.business_models_for_personas(
         [persona["id"]]
     ).get(persona["id"], journey_outcome.SALES)
-    return journey_service.set_journey_state(
-        lead_id, body, str(user["id"]), offering=offering,
+    return runtime_client.set_journey_state(
+        lead_id,
+        body.model_dump(mode="json"),
+        actor_user_id=str(user["id"]),
+        offering=offering,
     )
 
 
