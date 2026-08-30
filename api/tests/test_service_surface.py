@@ -65,8 +65,9 @@ def test_public_surface_excludes_other_domains():
 
 def test_control_plane_image_excludes_tests_and_one_time_scripts():
     dockerignore = (ROOT / ".dockerignore").read_text(encoding="utf-8")
-    for excluded in ("api/scripts/", "api/tests/", "tests/"):
+    for excluded in ("api/scripts/*", "api/tests/", "tests/"):
         assert excluded in dockerignore
+    assert "!api/scripts/resync_graph_agent_workflows.py" in dockerignore
 
 
 def test_runtime_and_transport_engines_are_absent_from_control_plane():
