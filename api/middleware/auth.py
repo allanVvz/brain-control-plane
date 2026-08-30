@@ -22,11 +22,11 @@ PUBLIC_EXACT_PATHS = {
     "/webhooks/whatsapp/inbound",
     "/webhooks/whatsapp/status",
     "/internal/whatsapp/outbound-result",
-    "/internal/conversations/context",
-    "/internal/conversations/decide",
-    "/internal/conversations/commit",
-    "/internal/conversations/fail-safe-handoff",
-    "/internal/conversations/technical-failure",
+    "/internal/v1/conversations/context",
+    "/internal/v1/conversations/decide",
+    "/internal/v1/conversations/commit",
+    "/internal/v1/conversations/fail-safe-handoff",
+    "/internal/v1/conversations/technical-failure",
     # Integration-authenticated equivalent of the operator conversion route.
     # The handler performs constant-time X-Webhook-Token validation.
     "/internal/agents/leads/{lead_ref}/purchase-completed",
