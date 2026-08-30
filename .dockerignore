@@ -5,6 +5,7 @@ __pycache__/
 htmlcov/
 .env
 .venv/
-api/scripts/
+api/scripts/*
+!api/scripts/resync_graph_agent_workflows.py
 api/tests/
 tests/
